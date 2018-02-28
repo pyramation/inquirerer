@@ -34,7 +34,7 @@ And will skip the interactive phase, unless more questions are unanswered.
 
 ## `_` properties
 
-If you set `_: true`, then you can pass an argument into the system and it won't need the parameter name. Reasoning is many libraries such as `minimist` use `_` to store properties that aren't flagged.
+If you set `_: true`, then you can pass an argument into the system and it won't need the parameter name.
 
 ```js
 const questions = [
