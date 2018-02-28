@@ -1,5 +1,9 @@
 # Inquirerer
 
+```sh
+npm install inquirerer
+```
+
 A wrapper around Inquirer to solve this issue: https://github.com/SBoudrias/Inquirer.js/issues/166
 
 Allows you to override properties passed in, and won't be asked interactively. This is huge when creating real production systems where scripts need to run automatically without human interaction.
