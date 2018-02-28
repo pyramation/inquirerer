@@ -7,6 +7,7 @@ inquirer.registerPrompt(
 );
 
 export interface InquirerQuestion {
+  _?: boolean;
   name: string;
   message: string;
   required?: boolean;

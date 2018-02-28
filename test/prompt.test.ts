@@ -4,9 +4,11 @@ describe('arguments', () => {
     const questions = [
       {
         name: 'hello',
+        message: 'hello',
       },
       {
         name: 'world',
+        message: 'world',
       },
     ];
     const argv = {
@@ -19,18 +21,21 @@ describe('arguments', () => {
       world: 2,
     });
   });
-  it('empty when all args supplied', () => {
+  it('empty when all args supplied II', () => {
     const questions = [
       {
         _: true,
         name: 'foo',
+        message: 'foo',
       },
       {
         name: 'bar',
+        message: 'bar',
       },
       {
         _: true,
         name: 'baz',
+        message: 'baz',
       },
     ];
     const argv = {
@@ -41,7 +46,7 @@ describe('arguments', () => {
     const _1 = filter(questions, argv);
     const _2 = _filter(questions, argv);
 
-    expect(_2).toEqual([]);
+    expect(_2).toEqual({ _: [], bar: 2, baz: 3, foo: 1 });
     expect(argv).toEqual({
       _: [],
       foo: 1,
@@ -94,7 +99,7 @@ describe('arguments', () => {
         required: true,
       },
     ]);
-    expect(argv).toEqual({ _: [], cmd: 'init' };);
+    expect(argv).toEqual({ _: [], cmd: 'init' });
   });
 });
 describe('prompt', () => {
@@ -159,29 +164,13 @@ describe('prompt', () => {
   it('basic example', async () => {
     const questions = [
       {
-        name: 'name',
+        name: 'cmd',
         message: 'project name (e.g., flipr)',
         required: true,
       },
     ];
     const argv = { _: [], cmd: 'init' };
     const value = await prompt(questions, argv);
-    console.log(value);
-  });
-
-  xit('init example', async () => {
-    const questions = [
-      {
-        _: true,
-        name: 'foo',
-        message: '',
-      },
-    ];
-    const argv = {
-      _: [],
-      bar: 2,
-    };
-    const value = await prompt(questions, argv);
-    console.log(value);
+    expect(value).toEqual(argv);
   });
 });
