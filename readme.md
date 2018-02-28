@@ -17,6 +17,7 @@ const questions = [
     name: 'database',
     message: 'database',
     required: true,
+    ...
   },
 ];
 
@@ -38,9 +39,11 @@ If you set `_: true`, then you can pass an argument into the system and it won't
 ```js
 const questions = [
   {
+    _: true,
     name: 'database',
     message: 'database',
     required: true,
+    ...
   },
 ];
 
@@ -57,4 +60,42 @@ or equivalently:
 
 ```sh
 node myprogram.js --database mydb1
+```
+
+## `_` properties with multiple
+
+```
+const questions = [
+  {
+    _: true,
+    name: 'foo',
+    message: 'foo',
+  },
+  {
+    name: 'bar',
+    message: 'bar',
+  },
+  {
+    _: true,
+    name: 'baz',
+    message: 'baz',
+  },
+];
+
+const result = await prompt(questions, argv);
+```
+
+```sh
+node myprogram.js 1 3 --bar 2
+```
+
+will treat `argv` as
+
+```
+{
+  _: [],
+  foo: 1,
+  bar: 2,
+  baz: 3,
+}
 ```
