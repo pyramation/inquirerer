@@ -174,3 +174,63 @@ describe('prompt', () => {
     expect(value).toEqual(argv);
   });
 });
+describe('filter', ()=> {
+  it('runs filter without _', async () => {
+    const questions = [
+      {
+        name: 'hello',
+        message: '',
+        filter: (val) => {
+          return val + '!';
+        }
+      },
+      {
+        name: 'world',
+        message: '',
+        filter: (val) => {
+          return val + '!';
+        }
+      },
+    ];
+    const argv = {
+      hello: 1,
+      world: 2,
+    };
+
+    const value = await prompt(questions, argv);
+    expect(value).toEqual({
+      hello: '1!',
+      world: '2!',
+    });
+  });
+  it('runs filter with _', async () => {
+    const questions = [
+      {
+        _: true,
+        name: 'hello',
+        message: '',
+        filter: (val) => {
+          return val + '!';
+        }
+      },
+      {
+        name: 'world',
+        message: '',
+        filter: (val) => {
+          return val + '!';
+        }
+      },
+    ];
+    const argv = {
+      _: [1],
+      world: 2,
+    };
+
+    const value = await prompt(questions, argv);
+    expect(value).toEqual({
+      _: [],
+      hello: '1!',
+      world: '2!',
+    });
+  });
+})

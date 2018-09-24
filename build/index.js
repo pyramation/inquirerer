@@ -92,6 +92,12 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         for (var i = 0; i < includes.length; i++) {
             answers[_Qs[i].name] = answers._.shift();
         }
+        // now run the filter command if on any questions
+        questions.filter(function (q) { return q.hasOwnProperty('filter') && typeof q.filter === 'function'; }).forEach(function (question) {
+            if (answers.hasOwnProperty(question.name)) {
+                answers[question.name] = question.filter(answers[question.name]);
+            }
+        });
         return answers;
     };
     exports.prompt = function (questions, answers) { return __awaiter(_this, void 0, void 0, function () {

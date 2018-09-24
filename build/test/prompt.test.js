@@ -251,5 +251,81 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
             });
         }); });
     });
+    describe('filter', function () {
+        it('runs filter without _', function () { return __awaiter(_this, void 0, void 0, function () {
+            var questions, argv, value;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        questions = [
+                            {
+                                name: 'hello',
+                                message: '',
+                                filter: function (val) {
+                                    return val + '!';
+                                }
+                            },
+                            {
+                                name: 'world',
+                                message: '',
+                                filter: function (val) {
+                                    return val + '!';
+                                }
+                            },
+                        ];
+                        argv = {
+                            hello: 1,
+                            world: 2,
+                        };
+                        return [4 /*yield*/, index_1.prompt(questions, argv)];
+                    case 1:
+                        value = _a.sent();
+                        expect(value).toEqual({
+                            hello: '1!',
+                            world: '2!',
+                        });
+                        return [2 /*return*/];
+                }
+            });
+        }); });
+        it('runs filter with _', function () { return __awaiter(_this, void 0, void 0, function () {
+            var questions, argv, value;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        questions = [
+                            {
+                                _: true,
+                                name: 'hello',
+                                message: '',
+                                filter: function (val) {
+                                    return val + '!';
+                                }
+                            },
+                            {
+                                name: 'world',
+                                message: '',
+                                filter: function (val) {
+                                    return val + '!';
+                                }
+                            },
+                        ];
+                        argv = {
+                            _: [1],
+                            world: 2,
+                        };
+                        return [4 /*yield*/, index_1.prompt(questions, argv)];
+                    case 1:
+                        value = _a.sent();
+                        expect(value).toEqual({
+                            _: [],
+                            hello: '1!',
+                            world: '2!',
+                        });
+                        return [2 /*return*/];
+                }
+            });
+        }); });
+    });
 });
 //# sourceMappingURL=prompt.test.js.map

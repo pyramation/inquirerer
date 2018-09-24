@@ -59,6 +59,14 @@ export const _filter = (
   for (var i = 0; i < includes.length; i++) {
     answers[_Qs[i].name] = answers._.shift();
   }
+
+  // now run the filter command if on any questions
+  questions.filter(q => q.hasOwnProperty('filter') && typeof q.filter === 'function' ).forEach(question=> {
+    if (answers.hasOwnProperty(question.name)) {
+      answers[question.name] = question.filter(answers[question.name]);
+    }
+  });
+
   return answers;
 };
 
