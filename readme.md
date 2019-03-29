@@ -1,10 +1,10 @@
+## NOTE: New improved version here: https://github.com/pyramation/prompt
+
 # Inquirerer
 
 ```sh
 npm install inquirerer
 ```
-
-New improved version here: https://github.com/pyramation/prompt
 
 A wrapper around Inquirer to solve this issue: https://github.com/SBoudrias/Inquirer.js/issues/166
 
