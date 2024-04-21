@@ -27,32 +27,36 @@ export class Inquirerer {
   }
 
   // Method to prompt for missing parameters
-  public async prompt<T extends object>(params: T, questions: Question[], usageText?: string): Promise<T> {
-    const obj: any = { ...params };
+  // Method to prompt for missing parameters
+public async prompt<T extends object>(params: T, questions: Question[], usageText?: string): Promise<T> {
+  const obj: any = { ...params };
 
-    if (usageText && Object.values(params).some(value => value === undefined) && !this.noTty) {
-      console.log(usageText);
-    }
+  if (usageText && Object.values(params).some(value => value === undefined) && !this.noTty) {
+    console.log(usageText);
+  }
 
-    for (const question of questions) {
-      if (obj[question.name] === undefined) {
-        if (!this.noTty) {
-          if (this.rl) {
-            obj[question.name] = await new Promise<string>((resolve) => {
-              this.rl.question(`Enter ${question.name}: `, resolve);
+  for (const question of questions) {
+    if (obj[question.name] === undefined) {
+      if (!this.noTty) {
+        if (this.rl) {
+          obj[question.name] = await new Promise<string | null>((resolve) => {
+            this.rl.question(`Enter ${question.name}: `, (answer) => {
+              resolve(answer ? answer : null);  // Convert empty string to null
             });
-          } else {
-            throw new Error("No TTY available and a readline interface is missing.");
-          }
+          });
         } else {
-          // Optionally handle noTty cases, e.g., set defaults or throw errors
-          throw new Error(`Missing required parameter: ${question.name}`);
+          throw new Error("No TTY available and a readline interface is missing.");
         }
+      } else {
+        // Optionally handle noTty cases, e.g., set defaults or throw errors
+        throw new Error(`Missing required parameter: ${question.name}`);
       }
     }
-
-    return obj as T;
   }
+
+  return obj as T;
+}
+
 
 
 

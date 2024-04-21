@@ -36,6 +36,8 @@ const main = async () => {
   const args2 = await prompter.promptCheckbox(argv, {
     name: 'name',
     maxDisplayLines: 8,
+    returnFullResults: false,
+    required: true,
     options: [
       'Apple', 'Apricot', 'Avocado', 
       'Banana', 'Blackberry', 'Blueberry', 'Boysenberry',
