@@ -6,4 +6,5 @@ export interface Question {
 
   maxDisplayLines?: number;  // Optional parameter to limit the number of visible options
 
+  returnFullResults?: boolean;
 }
