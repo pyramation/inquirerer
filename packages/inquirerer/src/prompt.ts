@@ -1,7 +1,7 @@
+
 import readline from 'readline';
 
 import { Question } from './question';
-
 export class Inquirerer {
   private rl: readline.Interface | null;
   private noTty: boolean;
@@ -13,6 +13,8 @@ export class Inquirerer {
         input: process.stdin,
         output: process.stdout
       });
+      process.stdin.setRawMode(true);
+      process.stdin.resume();
     } else {
       this.rl = null;
     }
@@ -46,10 +48,58 @@ export class Inquirerer {
     return obj as T;
   }
 
+  async promptCheckbox(_argv: any, question: Question) {
+    const { options } = question;
+    let selectedIndex = 0;
+    const selections = new Array(options.length).fill(false);
+
+    const display = () => {
+      console.clear();
+      // @ts-ignore
+      options.forEach((option, index) => {
+        const isSelected = selectedIndex === index ? '>' : ' ';
+        const isChecked = selections[index] ? '◉' : '○';
+        console.log(`${isSelected} ${isChecked} ${option}`);
+      });
+    };
+
+    return new Promise((resolve) => {
+      display();
+
+      // @ts-ignore
+      const onKeyPress = (chunk, key) => {
+        const char = chunk.toString();
+
+        if (key && key.ctrl && key.name === 'c') {
+          process.exit(); // exit on Ctrl+C
+        }
+
+        if (char === '\u001b[A' || char === 'w') { // arrow up or 'w'
+          selectedIndex = (selectedIndex - 1 + options.length) % options.length;
+        } else if (char === '\u001b[B' || char === 's') { // arrow down or 's'
+          selectedIndex = (selectedIndex + 1) % options.length;
+        } else if (char === ' ') { // space bar
+          selections[selectedIndex] = !selections[selectedIndex];
+        } else if (char === '\r') { // enter key
+          process.stdin.removeListener('data', onKeyPress);
+          process.stdin.setRawMode(false);
+          resolve(selections);
+          return;
+        }
+
+        display();
+      };
+
+      process.stdin.on('data', onKeyPress);
+    });
+  }
+
   // Method to cleanly close the readline interface
   public close() {
     if (this.rl) {
       this.rl.close();
+      process.stdin.setRawMode(false);
+    process.stdin.pause();
     }
   }
 }

@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 import minimist from 'minimist';
+
 import { Inquirerer } from "../src";
 import { displayVersion } from '../src/utils';
 
 const argv = minimist(process.argv.slice(2), {
     alias: {
-      v: 'version'
+        v: 'version'
     }
-  });
-  
-  if (!('tty' in argv)) {
+});
+
+if (!('tty' in argv)) {
     argv.tty = true;
 }
 
@@ -17,8 +18,8 @@ const argv = minimist(process.argv.slice(2), {
 if (argv.version) {
     displayVersion();
     process.exit(0);
-  }
-  
+}
+
 const prompter = new Inquirerer();
 
 const main = async () => {
@@ -30,8 +31,15 @@ const main = async () => {
             name: 'flower'
         }
     ]);
+    const args2 = await prompter.promptCheckbox(argv, {
+        name: 'name',
+        options: [
+            'a', 'b', 'c'
+        ]
+    });
 
     console.log(args);
+    console.log(args2);
 
     prompter.close();
 };
