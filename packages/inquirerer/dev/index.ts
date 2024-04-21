@@ -32,15 +32,18 @@ const main = async () => {
       name: 'flower'
     }
   ]);
-  // const args2 = await prompter.promptCheckbox(argv, {
-  //   name: 'name',
-  //   options: [
-  //     'a', 'b', 'c'
-  //   ]
-  // });
+  
+  const args2 = await prompter.promptCheckbox(argv, {
+    name: 'name',
+    options: [
+      'a', 'b', 'c'
+    ]
+  });
+
   const question: Question = {
     name: 'fruitSearch',
     type: 'autocomplete',
+    maxDisplayLines: 5,
     options: [
       'Apple', 'Apricot', 'Avocado', 
       'Banana', 'Blackberry', 'Blueberry', 'Boysenberry',
@@ -72,7 +75,7 @@ const main = async () => {
   const args3 = await prompter.promptAutocomplete(question);
 
   console.log(args);
-  // console.log(args2);
+  console.log(args2);
   console.log(args3);
 
   prompter.close();

@@ -14,18 +14,23 @@ export const KEY_CODES = {
 
 export class TerminalKeypress {
   private listeners: Record<string, KeyHandler[]> = {};
+  private active: boolean = true;
+
 
   constructor() {
     process.stdin.setRawMode(true);
     process.stdin.resume();
     process.stdin.setEncoding('utf8');
+    this.setupListeners();
+  }
 
+
+  private setupListeners(): void {
     process.stdin.on('data', (key: string) => {
+      if (!this.active) return;
       const handlers = this.listeners[key];
       handlers?.forEach(handler => handler());
-
-      // Exit on Ctrl+C
-      if (key === '\u0003') {
+      if (key === KEY_CODES.CTRL_C) { // Ctrl+C
         process.exit();
       }
     });
@@ -45,6 +50,14 @@ export class TerminalKeypress {
         this.listeners[key].splice(index, 1);
       }
     }
+  }
+
+  pause(): void {
+    this.active = false;
+  }
+
+  resume(): void {
+    this.active = true;
   }
 
   destroy(): void {
