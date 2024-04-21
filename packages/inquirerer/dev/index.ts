@@ -35,9 +35,33 @@ const main = async () => {
   
   const args2 = await prompter.promptCheckbox(argv, {
     name: 'name',
+    maxDisplayLines: 8,
     options: [
-      'a', 'b', 'c'
-    ]
+      'Apple', 'Apricot', 'Avocado', 
+      'Banana', 'Blackberry', 'Blueberry', 'Boysenberry',
+      'Cherry', 'Clementine', 'Coconut', 'Cranberry', 
+      'Date', 'Durian',
+      'Elderberry',
+      'Fig',
+      'Grape', 'Grapefruit', 'Guava',
+      'Honeydew',
+      'Kiwi', 'Kumquat',
+      'Lemon', 'Lime', 'Lychee',
+      'Mango', 'Melon', 'Mulberry',
+      'Nectarine',
+      'Orange',
+      'Papaya', 'Peach', 'Pear', 'Persimmon', 'Pineapple', 'Plum', 'Pomegranate', 'Pomelo',
+      'Quince',
+      'Raspberry', 'Redcurrant',
+      'Strawberry', 'Starfruit',
+      'Tangerine',
+      'Ugli Fruit',
+      'Vanilla',
+      'Watermelon',
+      'Xigua (Chinese Watermelon)',
+      'Yellow Plum',
+      'Zucchini'
+  ]
   });
 
   const question: Question = {

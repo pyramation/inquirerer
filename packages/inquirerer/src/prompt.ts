@@ -50,47 +50,65 @@ export class Inquirerer {
   }
 
 
-  async promptCheckbox(_argv: any, question: Question): Promise<boolean[]> {
+  async promptCheckbox(_argv: any, question: Question): Promise<{[key: string]: boolean}> {
     this.keypress.resume();
     const options = question.options || [];
     let selectedIndex = 0;
+    let startIndex = 0; // Start index for visible options
+    const maxLines = question.maxDisplayLines || options.length; // Use provided max or total options
     const selections: boolean[] = new Array(options.length).fill(false);
   
     const display = (): void => {
       console.clear();
-      options.forEach((option, index) => {
-        const isSelected = selectedIndex === index;
+      const endIndex = Math.min(startIndex + maxLines, options.length);
+      for (let i = startIndex; i < endIndex; i++) {
+        const option = options[i];
+        const isSelected = selectedIndex === i;
         const marker = isSelected ? '>' : ' ';
-        const isChecked = selections[index] ? '◉' : '○';
+        const isChecked = selections[i] ? '◉' : '○';
         const line = `${marker} ${isChecked} ${option}`;
-        // If the current line is selected, highlight it in blue
         console.log(isSelected ? chalk.blue(line) : line);
-      });
+      }
     };
   
     display();
   
     this.keypress.on(KEY_CODES.UP_ARROW, () => {
-      selectedIndex = (selectedIndex - 1 + options.length) % options.length;
+      selectedIndex = selectedIndex > 0 ? selectedIndex - 1 : options.length - 1;
+      if (selectedIndex < startIndex) {
+        startIndex = selectedIndex; // Scroll up
+      } else if (selectedIndex === options.length - 1) {
+        startIndex = Math.max(0, options.length - maxLines); // Jump to the bottom of the list
+      }
       display();
     });
+  
     this.keypress.on(KEY_CODES.DOWN_ARROW, () => {
       selectedIndex = (selectedIndex + 1) % options.length;
+      if (selectedIndex >= startIndex + maxLines) {
+        startIndex = selectedIndex - maxLines + 1; // Scroll down
+      } else if (selectedIndex === 0) {
+        startIndex = 0; // Jump to the top of the list
+      }
       display();
     });
+  
     this.keypress.on(KEY_CODES.SPACE, () => {
       selections[selectedIndex] = !selections[selectedIndex];
       display();
     });
   
-    return new Promise<boolean[]>(resolve => {
+    return new Promise<{[key: string]: boolean}>(resolve => {
       this.keypress.on(KEY_CODES.ENTER, () => {
         this.keypress.pause();
-        resolve(selections);
+        const result: {[key: string]: boolean} = {};
+        options.forEach((option, index) => {
+          result[option] = selections[index];
+        });
+        resolve(result);
       });
     });
   }
-
   async promptAutocomplete(question: Question): Promise<string> {
     this.keypress.resume();
     const options = question.options || [];
