@@ -7,7 +7,9 @@ export const KEY_CODES = {
   LEFT_ARROW: '\u001b[D',
   ENTER: '\r',
   SPACE: ' ',
-  CTRL_C: '\u0003'
+  CTRL_C: '\u0003',
+  BACKSPACE: '\x7f',  // Commonly used BACKSPACE key in Unix-like systems
+  BACKSPACE_LEGACY: '\x08'  // For compatibility with some systems
 };
 
 export class TerminalKeypress {

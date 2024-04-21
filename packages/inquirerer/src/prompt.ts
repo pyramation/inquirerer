@@ -88,6 +88,74 @@ export class Inquirerer {
   }
 
 
+  async promptAutocomplete(question: Question): Promise<string> {
+    const options = question.options || [];
+    let input = '';
+    let filteredOptions = options;
+    let selectedIndex = 0;
+
+    const display = (): void => {
+      console.clear();
+      console.log(`Search: ${input}`);
+      filteredOptions.forEach((option, index) => {
+        if (index === selectedIndex) {
+          console.log(`> ${option}`); // Highlight the selected option
+        } else {
+          console.log(`  ${option}`);
+        }
+      });
+    };
+
+    const updateFilteredOptions = (): void => {
+      filteredOptions = this.filterOptions(options, input);
+      if (selectedIndex >= filteredOptions.length) {
+        selectedIndex = Math.max(filteredOptions.length - 1, 0);
+      }
+    };
+
+    display();
+
+    // Handling BACKSPACE key
+    this.keypress.on(KEY_CODES.BACKSPACE, () => {
+      input = input.slice(0, -1);
+      updateFilteredOptions();
+      display();
+    });
+
+    // Register alphanumeric and space keypresses to accumulate input
+    'abcdefghijklmnopqrstuvwxyz0123456789 '.split('').forEach(char => {
+      this.keypress.on(char, () => {
+        input += char;
+        updateFilteredOptions();
+        display();
+      });
+    });
+
+    // Navigation
+    this.keypress.on(KEY_CODES.UP_ARROW, () => {
+      selectedIndex = Math.max(0, selectedIndex - 1);
+      display();
+    });
+    this.keypress.on(KEY_CODES.DOWN_ARROW, () => {
+      selectedIndex = Math.min(filteredOptions.length - 1, selectedIndex + 1);
+      display();
+    });
+
+    return new Promise<string>(resolve => {
+      this.keypress.on(KEY_CODES.ENTER, () => {
+        this.keypress.destroy();
+        resolve(filteredOptions[selectedIndex] || input);
+      });
+    });
+  }
+
+  filterOptions(options: string[], input: string): string[] {
+    return options
+      .filter(option => option.toLowerCase().startsWith(input.toLowerCase()))
+      .sort();
+  }
+
+
   // Method to cleanly close the readline interface
   public close() {
     if (this.rl) {
