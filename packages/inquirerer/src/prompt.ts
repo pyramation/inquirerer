@@ -1,4 +1,4 @@
-
+import chalk from 'chalk'; 
 import readline from 'readline';
 
 import { KEY_CODES,TerminalKeypress } from './keypress';
@@ -55,18 +55,21 @@ export class Inquirerer {
     const options = question.options || [];
     let selectedIndex = 0;
     const selections: boolean[] = new Array(options.length).fill(false);
-
+  
     const display = (): void => {
       console.clear();
       options.forEach((option, index) => {
-        const isSelected = selectedIndex === index ? '>' : ' ';
+        const isSelected = selectedIndex === index;
+        const marker = isSelected ? '>' : ' ';
         const isChecked = selections[index] ? '◉' : '○';
-        console.log(`${isSelected} ${isChecked} ${option}`);
+        const line = `${marker} ${isChecked} ${option}`;
+        // If the current line is selected, highlight it in blue
+        console.log(isSelected ? chalk.blue(line) : line);
       });
     };
-
+  
     display();
-
+  
     this.keypress.on(KEY_CODES.UP_ARROW, () => {
       selectedIndex = (selectedIndex - 1 + options.length) % options.length;
       display();
@@ -79,7 +82,7 @@ export class Inquirerer {
       selections[selectedIndex] = !selections[selectedIndex];
       display();
     });
-
+  
     return new Promise<boolean[]>(resolve => {
       this.keypress.on(KEY_CODES.ENTER, () => {
         this.keypress.pause();
@@ -87,7 +90,6 @@ export class Inquirerer {
       });
     });
   }
-
 
   async promptAutocomplete(question: Question): Promise<string> {
     this.keypress.resume();
@@ -105,8 +107,11 @@ export class Inquirerer {
       const endIndex = Math.min(startIndex + maxLines, filteredOptions.length);
       for (let i = startIndex; i < endIndex; i++) {
         const option = filteredOptions[i];
-        const isSelected = i === selectedIndex ? '>' : ' ';
-        console.log(`${isSelected} ${option}`);
+        if (i === selectedIndex) {
+          console.log(chalk.blue('> ' + option)); // Highlight the selected option with chalk
+        } else {
+          console.log('  ' + option);
+        }
       }
     };
 
@@ -143,16 +148,20 @@ export class Inquirerer {
 
     // Navigation
     this.keypress.on(KEY_CODES.UP_ARROW, () => {
-      selectedIndex = Math.max(0, selectedIndex - 1);
+      selectedIndex = selectedIndex - 1 >= 0 ? selectedIndex - 1 : filteredOptions.length - 1;
       if (selectedIndex < startIndex) {
         startIndex = selectedIndex;  // Scroll up
+      } else if (selectedIndex === filteredOptions.length - 1) {
+        startIndex = Math.max(0, filteredOptions.length - maxLines); // Jump to the bottom of the list
       }
       display();
     });
     this.keypress.on(KEY_CODES.DOWN_ARROW, () => {
-      selectedIndex = Math.min(filteredOptions.length - 1, selectedIndex + 1);
+      selectedIndex = (selectedIndex + 1) % filteredOptions.length;
       if (selectedIndex >= startIndex + maxLines) {
         startIndex = selectedIndex - maxLines + 1;  // Scroll down
+      } else if (selectedIndex === 0) {
+        startIndex = 0;  // Jump to the top of the list
       }
       display();
     });
@@ -164,6 +173,8 @@ export class Inquirerer {
       });
     });
   }
+
+
   filterOptions(options: string[], input: string): string[] {
     return options
       .filter(option => option.toLowerCase().startsWith(input.toLowerCase()))
