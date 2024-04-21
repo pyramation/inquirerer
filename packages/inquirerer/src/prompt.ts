@@ -1,9 +1,11 @@
 
 import readline from 'readline';
 
+import { KEY_CODES,TerminalKeypress } from './keypress';
 import { Question } from './question';
 export class Inquirerer {
   private rl: readline.Interface | null;
+  private keypress: TerminalKeypress;
   private noTty: boolean;
 
   constructor(noTty: boolean = false) {
@@ -13,8 +15,7 @@ export class Inquirerer {
         input: process.stdin,
         output: process.stdout
       });
-      process.stdin.setRawMode(true);
-      process.stdin.resume();
+      this.keypress = new TerminalKeypress();
     } else {
       this.rl = null;
     }
@@ -48,14 +49,14 @@ export class Inquirerer {
     return obj as T;
   }
 
-  async promptCheckbox(_argv: any, question: Question) {
-    const { options } = question;
-    let selectedIndex = 0;
-    const selections = new Array(options.length).fill(false);
 
-    const display = () => {
+  async promptCheckbox(_argv: any, question: Question): Promise<boolean[]> {
+    const options = question.options || [];
+    let selectedIndex = 0;
+    const selections: boolean[] = new Array(options.length).fill(false);
+
+    const display = (): void => {
       console.clear();
-      // @ts-ignore
       options.forEach((option, index) => {
         const isSelected = selectedIndex === index ? '>' : ' ';
         const isChecked = selections[index] ? '◉' : '○';
@@ -63,43 +64,35 @@ export class Inquirerer {
       });
     };
 
-    return new Promise((resolve) => {
+    display();
+
+    this.keypress.on(KEY_CODES.UP_ARROW, () => {
+      selectedIndex = (selectedIndex - 1 + options.length) % options.length;
       display();
+    });
+    this.keypress.on(KEY_CODES.DOWN_ARROW, () => {
+      selectedIndex = (selectedIndex + 1) % options.length;
+      display();
+    });
+    this.keypress.on(KEY_CODES.SPACE, () => {
+      selections[selectedIndex] = !selections[selectedIndex];
+      display();
+    });
 
-      // @ts-ignore
-      const onKeyPress = (chunk, key) => {
-        const char = chunk.toString();
-
-        if (key && key.ctrl && key.name === 'c') {
-          process.exit(); // exit on Ctrl+C
-        }
-
-        if (char === '\u001b[A' || char === 'w') { // arrow up or 'w'
-          selectedIndex = (selectedIndex - 1 + options.length) % options.length;
-        } else if (char === '\u001b[B' || char === 's') { // arrow down or 's'
-          selectedIndex = (selectedIndex + 1) % options.length;
-        } else if (char === ' ') { // space bar
-          selections[selectedIndex] = !selections[selectedIndex];
-        } else if (char === '\r') { // enter key
-          process.stdin.removeListener('data', onKeyPress);
-          process.stdin.setRawMode(false);
-          resolve(selections);
-          return;
-        }
-
-        display();
-      };
-
-      process.stdin.on('data', onKeyPress);
+    return new Promise<boolean[]>(resolve => {
+      this.keypress.on(KEY_CODES.ENTER, () => {
+        this.keypress.destroy();
+        resolve(selections);
+      });
     });
   }
+
 
   // Method to cleanly close the readline interface
   public close() {
     if (this.rl) {
       this.rl.close();
-      process.stdin.setRawMode(false);
-    process.stdin.pause();
+      this.keypress.destroy();
     }
   }
 }
