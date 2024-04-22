@@ -15,10 +15,8 @@ function generatePromptMessage(question: Question, ctx: PromptContext): string {
   let promptMessage: string = '';
   if (question.message) {
     promptMessage = chalk.whiteBright(question.message) + '\n';
-    promptMessage += `${chalk.white('[')}${chalk.green('--'+question.name)}${chalk.white(']:')}\n`;
-  } else {
-    promptMessage = `${chalk.white('[')}${chalk.green('--'+question.name)}${chalk.white(']:')}\n`;
   }
+  promptMessage += `${chalk.white('[')}${chalk.green('--'+question.name)}${chalk.white(']:')}\n`;
 
   if (ctx.numTries > 0 && question.required) {
     promptMessage = requiredMessage(question) + promptMessage;
