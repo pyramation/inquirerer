@@ -114,16 +114,10 @@ export class Inquirerer {
     while (index < questions.length) {
       const question = questions[index];
 
-      if ('default' in question && this.useDefaults) {
+      if ('default' in question && (this.useDefaults || question.useDefault)) {
         obj[question.name] = question.default;
         continue;
       }
-      
-      if ('default' in question && question.useDefault) {
-        obj[question.name] = question.default;
-        continue;
-      }
-
 
       const ctx: PromptContext = {
         numTries
