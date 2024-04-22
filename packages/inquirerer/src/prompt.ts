@@ -322,11 +322,13 @@ export class Inquirerer {
     options?: PromptOptions
   ): Promise<T> {
 
-    let obj: any = (this.mutateArgs || options.mutateArgs) ? argv : { ...argv };
+    // use local mutateArgs if defined, otherwise global mutateArgs
+    const shouldMutate = options?.mutateArgs !== undefined ? options.mutateArgs : this.mutateArgs;
+    let obj: any = shouldMutate ? argv : { ...argv };
+
 
     // Assuming questions is an array of Question objects and argv is the parsed command line arguments object.
-    // @ts-ignore
-    if (this.noTty && questions.some(question => question.required && this.isEmptyAnswer(argv[question.name]))) {
+    if (this.noTty && questions.some(question => question.required && this.isEmptyAnswer((argv as any)[question.name]))) {
 
       for (let index = 0; index < questions.length; index++) {
         const question = questions[index];
@@ -336,8 +338,7 @@ export class Inquirerer {
         }
       }
 
-      // @ts-ignore
-      if (!questions.some(question => question.required && this.isEmptyAnswer(argv[question.name]))) {
+      if (!questions.some(question => question.required && this.isEmptyAnswer((argv as any)[question.name]))) {
         return obj as T;
       }
 
