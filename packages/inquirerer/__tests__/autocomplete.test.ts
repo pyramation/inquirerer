@@ -103,7 +103,11 @@ describe('Inquirerer', () => {
   });
 
   it('handles autocomplete selection with key events', async () => {
-    const prompter = new Inquirerer(false, mockInput, mockOutput);
+    const prompter = new Inquirerer({
+      input: mockInput,
+      output: mockOutput,
+      noTty: false
+    });
     const questions: Question[] = [{
       name: 'autocompleteField',
       type: 'autocomplete',

@@ -1,10 +1,9 @@
 import chalk from 'chalk';
 import readline from 'readline';
-import { Writable, Readable } from 'stream';
+import { Readable, Writable } from 'stream';
 
 import { KEY_CODES, TerminalKeypress } from './keypress';
 import { AutocompleteQuestion, CheckboxQuestion, ConfirmQuestion, Question, TextQuestion, Value } from './question';
-import { writeFileSync } from 'fs';
 
 const requiredMessage = (question: Question) => chalk.red(`The field "${question.name}" is required. Please provide a value.\n`);
 interface PromptContext {
@@ -41,17 +40,31 @@ function generatePromptMessage(question: Question, ctx: PromptContext): string {
 
   return promptMessage;
 }
+
+export interface InquirererOptions {
+  noTty?: boolean;
+  input?: Readable;
+  output?: Writable;
+  useDefaults?: boolean;
+}
 export class Inquirerer {
   private rl: readline.Interface | null;
   private keypress: TerminalKeypress;
   private noTty: boolean;
   private output: Writable;
+  private useDefaults: boolean;
 
   constructor(
-    noTty: boolean = false,
-    input: Readable = process.stdin,
-    output: Writable = process.stdout,
+    options?: InquirererOptions
   ) {
+    const { 
+      noTty = false,
+      input = process.stdin,
+      output = process.stdout,
+      useDefaults = false
+    } = options ?? {}
+
+    this.useDefaults = useDefaults;
     this.noTty = noTty;
     this.output = output;
 
@@ -100,6 +113,13 @@ export class Inquirerer {
     let numTries = 0;
     while (index < questions.length) {
       const question = questions[index];
+
+      if ('default' in question && this.useDefaults) {
+        obj[question.name] = question.default;
+        continue;
+      }
+
+
       const ctx: PromptContext = {
         numTries
       }

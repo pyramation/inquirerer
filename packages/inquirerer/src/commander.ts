@@ -47,7 +47,11 @@ export class CLI {
     this.options = mergedOptions as CLIOptions;
 
     this.argv = argv ? argv : minimist(process.argv.slice(2), this.options.minimistOpts);
-    this.prompter = new Inquirerer(this.options.noTty, this.options.input, this.options.output);
+    this.prompter = new Inquirerer({
+      noTty: this.options.noTty,
+      input: this.options.input,
+      output: this.options.output
+    });
     this.commandHandler = commandHandler;
 
   }

@@ -105,7 +105,11 @@ describe('Inquirerer', () => {
   it('prompts user and correctly processes delayed input', async () => {
     enqueueInputResponse({ type: 'read', value: 'user input' });
 
-    const prompter = new Inquirerer(false, mockInput, mockOutput);
+    const prompter = new Inquirerer({
+      input: mockInput,
+      output: mockOutput,
+      noTty: false
+    });
     const questions: Question[] = [{ name: 'username', type: 'text' }];
     const initialParams = {};
 
@@ -123,7 +127,11 @@ describe('Inquirerer', () => {
     enqueueInputResponse({ type: 'read', value: 'first question answer' });
     enqueueInputResponse({ type: 'read', value: 'second question answer' });
 
-    const prompter = new Inquirerer(false, mockInput, mockOutput);
+    const prompter = new Inquirerer({
+      input: mockInput,
+      output: mockOutput,
+      noTty: false
+    });
     const questions: Question[] = [
       { name: 'firstQuestion', type: 'text' },
       { name: 'secondQuestion', type: 'text' }
@@ -142,7 +150,11 @@ describe('Inquirerer', () => {
 
   it('handles combined key events and readline inputs', async () => {
 
-    const prompter = new Inquirerer(false, mockInput, mockOutput);
+    const prompter = new Inquirerer({
+      input: mockInput,
+      output: mockOutput,
+      noTty: false
+    });
     const questions: Question[] = [
       { name: 'firstQuestion', type: 'text' },
       { name: 'secondQuestion', type: 'text' }
@@ -166,7 +178,11 @@ describe('Inquirerer', () => {
 
   it('checkbox', async () => {
 
-    const prompter = new Inquirerer(false, mockInput, mockOutput);
+    const prompter = new Inquirerer({
+      input: mockInput,
+      output: mockOutput,
+      noTty: false
+    });
     const questions: Question[] = [
       {
         name: 'checkbox', type: 'checkbox', options: [
@@ -191,7 +207,11 @@ describe('Inquirerer', () => {
 
   it('checkbox w/options', async () => {
 
-    const prompter = new Inquirerer(false, mockInput, mockOutput);
+    const prompter = new Inquirerer({
+      input: mockInput,
+      output: mockOutput,
+      noTty: false
+    });
     const questions: Question[] = [
       { 
         name: 'checkbox',
@@ -219,7 +239,11 @@ describe('Inquirerer', () => {
 
   it('handles readline inputs', async () => {
 
-    const prompter = new Inquirerer(false, mockInput, mockOutput);
+    const prompter = new Inquirerer({
+      input: mockInput,
+      output: mockOutput,
+      noTty: false
+    });
     const questions: Question[] = [
       { name: 'firstQuestion', type: 'text' },
       { name: 'secondQuestion', type: 'text' },
