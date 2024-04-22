@@ -2,7 +2,7 @@
 import minimist from 'minimist';
 
 import { Inquirerer } from "../src";
-import { Question } from '../src/question';
+import { AutocompleteQuestion, ConfirmQuestion, Question } from '../src/question';
 import { displayVersion } from '../src/utils';
 
 const argv = minimist(process.argv.slice(2), {
@@ -104,7 +104,8 @@ const main = async () => {
   // console.log(args2);
   // console.log(args3);
 
-  const massive = await prompter.prompt({}, [
+
+  const massive = await prompter.prompt({},  [
     // question,
     // {
     //   type: 'text',
@@ -219,7 +220,6 @@ const main = async () => {
     }
     
   ])
-
   console.log(JSON.stringify(massive, null, 2))
   prompter.close();
 };

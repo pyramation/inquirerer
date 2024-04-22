@@ -3,7 +3,7 @@ import readline from 'readline';
 import { Readable, Writable } from 'stream';
 
 import { KEY_CODES, TerminalKeypress } from './keypress';
-import { AutocompleteQuestion, CheckboxQuestion, ConfirmQuestion, OptionValue,Question, TextQuestion, Value } from './question';
+import { AutocompleteQuestion, BaseQuestion, CheckboxQuestion, ConfirmQuestion, OptionValue,Question, TextQuestion, Value } from './question';
 
 const requiredMessage = (question: Question) => chalk.red(`The field "${question.name}" is required. Please provide a value.\n`);
 interface PromptContext {
