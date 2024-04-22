@@ -116,6 +116,7 @@ export class Inquirerer {
 
       if ('default' in question && (this.useDefaults || question.useDefault)) {
         obj[question.name] = question.default;
+        index++;  // Move to the next question
         continue;
       }
 
