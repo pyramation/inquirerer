@@ -1,6 +1,6 @@
 {
-  "name": "@pyramation/inquirerer",
-  "version": "0.0.2",
+  "name": "inquirerer",
+  "version": "0.2.0",
   "author": "Dan Lynch <pyramation@gmail.com>",
   "description": "inquirerer",
   "main": "index.js",
