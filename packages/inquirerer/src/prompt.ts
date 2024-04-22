@@ -118,6 +118,11 @@ export class Inquirerer {
         obj[question.name] = question.default;
         continue;
       }
+      
+      if ('default' in question && question.useDefault) {
+        obj[question.name] = question.default;
+        continue;
+      }
 
 
       const ctx: PromptContext = {
