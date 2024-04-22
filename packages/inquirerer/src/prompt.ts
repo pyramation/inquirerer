@@ -422,7 +422,7 @@ export class Inquirerer {
   private getOptionValue(option: string | OptionValue): OptionValue {
     if (typeof option === 'string') {
       return { name: option, value: option };
-    } else if (typeof option === 'object' && 'name' in option) {
+    } else if (typeof option === 'object' && option && 'name' in option) {
       return { name: option.name, value: option.value };
     } else {
       return undefined;
