@@ -5,11 +5,16 @@ import { Readable, Writable } from 'stream';
 import { KEY_CODES, TerminalKeypress } from './keypress';
 import { AutocompleteQuestion, CheckboxQuestion, ConfirmQuestion, OptionValue, Question, TextQuestion, Validation, Value } from './question';
 
-interface ManPageInfo {
+export interface ManPageInfo {
   commandName: string;
   questions: Question[];
   author?: string;
   description?: string;
+}
+export interface PromptOptions {
+  usageText?: string;
+  manPageInfo?: ManPageInfo;
+  mutateArgs?: boolean;
 }
 
 const validationMessage = (question: Question, ctx: PromptContext): string => {
@@ -29,8 +34,6 @@ const validationMessage = (question: Question, ctx: PromptContext): string => {
     default:
       return chalk.red(`The field "${question.name}" is invalid. Please try again.\n`);
   }
-
-  return ''; // Return empty string if no specific conditions are met
 };
 class PromptContext {
   numTries: number = 0;
@@ -108,6 +111,8 @@ export interface InquirererOptions {
   output?: Writable;
   useDefaults?: boolean;
   globalMaxLines?: number;
+  mutateArgs?: boolean;
+  
 }
 export class Inquirerer {
   private rl: readline.Interface | null;
@@ -117,6 +122,7 @@ export class Inquirerer {
   private input: Readable;
   private useDefaults: boolean;
   private globalMaxLines: number;
+  private mutateArgs: boolean;
 
   constructor(
     options?: InquirererOptions
@@ -126,12 +132,14 @@ export class Inquirerer {
       input = process.stdin,
       output = process.stdout,
       useDefaults = false,
-      globalMaxLines = 10
+      globalMaxLines = 10,
+      mutateArgs = true
     } = options ?? {}
 
     this.useDefaults = useDefaults;
     this.noTty = noTty;
     this.output = output;
+    this.mutateArgs = mutateArgs;
     this.input = input;
     this.globalMaxLines = globalMaxLines;
 
@@ -152,35 +160,34 @@ export class Inquirerer {
     }
   }
 
-  clearScreen() {
+  private clearScreen() {
     // same as console.clear()
     this.output.write('\x1Bc'); // This is the escape sequence to clear the terminal screen.
   }
 
-  write(message: string) {
+  private write(message: string) {
     this.output.write(message);
   }
 
-  log(message: string) {
+  private log(message: string) {
     this.output.write(message + '\n');
   }
 
-  getInput(input: string) {
+  private getInput(input: string) {
     return `${chalk.white.bold('$')} ${input}`;
   }
 
-  getPrompt(question: Question, ctx: PromptContext, input: string) {
+  private getPrompt(question: Question, ctx: PromptContext, input: string) {
     const promptMessage = generatePromptMessage(question, ctx);
     return promptMessage + this.getInput(input);
   }
-  displayPrompt(question: Question, ctx: PromptContext, input: string) {
+  private displayPrompt(question: Question, ctx: PromptContext, input: string) {
     const prompt = this.getPrompt(question, ctx, input);
     this.log(prompt);
   }
 
-  generateManPage(opts: ManPageInfo): string {
-
-    let manPage = `NAME\n\t${opts.commandName} ${opts.description ?? ''}\n\n`;
+  public generateManPage(opts: ManPageInfo): string {
+    let manPage = `${chalk.white('NAME')}\n\t${chalk.white(opts.commandName)} ${opts.description ?? ''}\n\n`;
 
     // Constructing the SYNOPSIS section with required and optional arguments
     let requiredArgs = '';
@@ -188,43 +195,43 @@ export class Inquirerer {
 
     opts.questions.forEach(question => {
       if (question.required) {
-        requiredArgs += ` --${question.name} <${question.name}>`;
+        requiredArgs += ` ${chalk.white('--' + question.name)} <${chalk.gray(question.name)}>`;
       } else {
-        optionalArgs += ` [--${question.name}${question.default ? `=${question.default}` : ''}]`;
+        optionalArgs += ` [${chalk.white('--' + question.name)}${question.default ? `=${chalk.gray(String(question.default))}` : ''}]`;
       }
     });
 
-    manPage += `SYNOPSIS\n\t${opts.commandName}${requiredArgs}${optionalArgs}\n\n`;
-    manPage += `DESCRIPTION\n\tUse this command to interact with the application. It supports the following options:\n\n`;
+    manPage += `${chalk.white('SYNOPSIS')}\n\t${chalk.white(opts.commandName)}${chalk.gray(requiredArgs)}${chalk.gray(optionalArgs)}\n\n`;
+    manPage += `${chalk.white('DESCRIPTION')}\n\tUse this command to interact with the application. It supports the following options:\n\n`;
 
     opts.questions.forEach(question => {
-      manPage += `${question.name.toUpperCase()}\n`;
-      manPage += `\tType: ${question.type}\n`;
+      manPage += `${chalk.white(question.name.toUpperCase())}\n`;
+      manPage += `\t${chalk.white('Type:')} ${chalk.gray(question.type)}\n`;
       if (question.message) {
-        manPage += `\tSummary: ${question.message}\n`;
+        manPage += `\t${chalk.white('Summary:')} ${chalk.gray(question.message)}\n`;
       }
       if (question.description) {
-        manPage += `\tDescription: ${question.description}\n`;
+        manPage += `\t${chalk.white('Description:')} ${chalk.gray(question.description)}\n`;
       }
       if ('options' in question) {
         const optionsList = Array.isArray(question.options)
-          ? question.options.map(opt => typeof opt === 'string' ? opt : `${opt.name} (${opt.value})`).join(', ')
+          ? question.options.map(opt => typeof opt === 'string' ? chalk.gray(opt) : `${chalk.gray(opt.name)} (${chalk.gray(opt.value)})`).join(', ')
           : '';
-        manPage += `\tOptions: ${optionsList}\n`;
+        manPage += `\t${chalk.white('Options:')} ${chalk.gray(optionsList)}\n`;
       }
       if (question.default !== undefined) {
-        manPage += `\tDefault: ${JSON.stringify(question.default)}\n`;
+        manPage += `\t${chalk.white('Default:')} ${chalk.gray(JSON.stringify(question.default))}\n`;
       }
       if (question.required) {
-        manPage += `\tRequired: Yes\n`;
+        manPage += `\t${chalk.white('Required:')} ${chalk.gray('Yes')}\n`;
       } else {
-        manPage += `\tRequired: No\n`;
+        manPage += `\t${chalk.white('Required:')} ${chalk.gray('No')}\n`;
       }
       manPage += '\n';
     });
 
-    manPage += `EXAMPLES\n\tExample usage of \`${opts.commandName}\`.\n\t$ ${opts.commandName}${requiredArgs}${optionalArgs}\n\n`;
-    manPage += opts.author ? `AUTHOR\n\t${opts.author}\n` : '';
+    manPage += `${chalk.white('EXAMPLES')}\n\tExample usage of \`${chalk.white(opts.commandName)}\`.\n\t$ ${chalk.white(opts.commandName)}${chalk.gray(requiredArgs)}${chalk.gray(optionalArgs)}\n\n`;
+    manPage += opts.author ? `${chalk.white('AUTHOR')}\n\t${chalk.white(opts.author)}\n` : '';
     return manPage;
   }
 
@@ -304,16 +311,18 @@ export class Inquirerer {
     return answer;
   }
 
+  public exit () {
+    this.clearScreen();
+    this.close();
+  }
 
   public async prompt<T extends object>(
     argv: T,
     questions: Question[],
-    docs?: {
-      usageText?: string,
-      manPageInfo?: ManPageInfo
-    }
+    options?: PromptOptions
   ): Promise<T> {
-    const obj: any = { ...argv };
+
+    let obj: any = (this.mutateArgs || options.mutateArgs) ? argv : { ...argv };
 
     // Assuming questions is an array of Question objects and argv is the parsed command line arguments object.
     // @ts-ignore
@@ -333,14 +342,14 @@ export class Inquirerer {
       }
 
       // If running in a non-interactive mode and any required argument is missing, handle the error.
-      if (docs?.usageText) {
-        this.log(docs.usageText);
-      } else if (docs?.manPageInfo) {
-        this.log(this.generateManPage(docs.manPageInfo))
+      if (options?.usageText) {
+        this.log(options.usageText);
+      } else if (options?.manPageInfo) {
+        this.log(this.generateManPage(options.manPageInfo))
       } else {
         this.log('Missing required arguments. Please provide all required parameters.');
       }
-      process.exit(1);
+      this.exit();
 
     }
 
@@ -381,7 +390,8 @@ export class Inquirerer {
         return this.text(question as TextQuestion, ctx);
     }
   }
-  async confirm(question: ConfirmQuestion, ctx: PromptContext): Promise<boolean> {
+  
+  public async confirm(question: ConfirmQuestion, ctx: PromptContext): Promise<boolean> {
     if (this.noTty || !this.rl) return question.default ?? false;  // Return default if non-interactive
 
     return new Promise<boolean>((resolve) => {
@@ -400,7 +410,7 @@ export class Inquirerer {
     });
   }
 
-  async text(question: TextQuestion, ctx: PromptContext): Promise<string | null> {
+  public async text(question: TextQuestion, ctx: PromptContext): Promise<string | null> {
     if (this.noTty || !this.rl) {
       if ('default' in question) {
         return question.default;
@@ -423,7 +433,7 @@ export class Inquirerer {
     });
   }
 
-  async checkbox(question: CheckboxQuestion, ctx: PromptContext): Promise<OptionValue[]> {
+  public async checkbox(question: CheckboxQuestion, ctx: PromptContext): Promise<OptionValue[]> {
     if (this.noTty || !this.rl) return question.default ?? [];  // Return default if non-interactive
 
     this.keypress.resume();
@@ -530,7 +540,7 @@ export class Inquirerer {
     });
   }
 
-  async autocomplete(question: AutocompleteQuestion, ctx: PromptContext): Promise<any> {
+  public async autocomplete(question: AutocompleteQuestion, ctx: PromptContext): Promise<any> {
     if (this.noTty || !this.rl) {
       if ('default' in question) {
         return question.default;
@@ -638,7 +648,7 @@ export class Inquirerer {
     return options.filter(Boolean);
   }
 
-  filterOptions(options: OptionValue[], input: string): OptionValue[] {
+  private filterOptions(options: OptionValue[], input: string): OptionValue[] {
     input = input.toLowerCase(); // Normalize input for case-insensitive comparison
 
     // Fuzzy matching: Check if all characters of the input can be found in the option name in order
@@ -672,7 +682,7 @@ export class Inquirerer {
       });
   }
 
-  getMaxLines(question: { maxDisplayLines?: number }, defaultLength: number): number {
+  private getMaxLines(question: { maxDisplayLines?: number }, defaultLength: number): number {
     if (question.maxDisplayLines) {
       return question.maxDisplayLines;
     }
@@ -685,7 +695,8 @@ export class Inquirerer {
   }
 
   // Method to cleanly close the readline interface
-  public close() {
+  // NOTE: use exit() to close!
+  private close() {
     if (this.rl) {
       this.rl.close();
       this.keypress.destroy();

@@ -1,7 +1,7 @@
 import readline from 'readline';
-import { Readable, Writable, Transform } from 'stream';
-
+import { Readable, Transform, Writable } from 'stream';
 import stripAnsi from 'strip-ansi';
+
 import { Inquirerer } from '../src';
 import { Question } from '../src/question';
 
@@ -17,8 +17,6 @@ describe('Inquirerer', () => {
   let mockWrite: jest.Mock;
   let mockInput: Readable;
   let mockOutput: Writable;
-  let questionHandlers: Array<(input: string) => void> = [];
-  let currentQuestionIndex: number = 0;
   let transformStream: Transform;
 
   let writeResults: string[];
@@ -42,8 +40,8 @@ describe('Inquirerer', () => {
 
   function enqueueInputResponse(input: { type: 'key' | 'read', value: string }) {
     if (input.type === 'key') {
-  // Push key events directly to mockInput
-  // @ts-ignore
+      // Push key events directly to mockInput
+      // @ts-ignore
       setTimeout(() => mockInput.push(input.value), 350);
     } else {
       // Queue readline responses to be handled by the readline mock
@@ -60,8 +58,6 @@ describe('Inquirerer', () => {
 
   beforeEach(() => {
     mockWrite = jest.fn();
-    currentQuestionIndex = 0;
-    questionHandlers = [];
     writeResults = [];
     transformResults = [];
 
@@ -213,7 +209,7 @@ describe('Inquirerer', () => {
       noTty: false
     });
     const questions: Question[] = [
-      { 
+      {
         name: 'checkbox',
         type: 'checkbox',
         options: [

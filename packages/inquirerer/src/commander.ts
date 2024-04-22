@@ -1,6 +1,6 @@
 import deepmerge from 'deepmerge';
 import minimist, { Opts, ParsedArgs } from 'minimist';
-import { Readable,Writable } from 'stream';
+import { Readable, Writable } from 'stream';
 
 import { Inquirerer } from './prompt';
 import { getVersion } from './utils';
@@ -68,7 +68,7 @@ export class CLI {
     }
 
     const args = await this.commandHandler(this.argv, this.prompter, this.options);
-    this.prompter.close();
+    this.prompter.exit();
     return args;
   }
 }
