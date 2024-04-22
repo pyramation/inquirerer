@@ -237,7 +237,7 @@ export class Inquirerer {
     const selections: boolean[] = new Array(options.length).fill(false);
 
     const updateFilteredOptions = (): void => {
-      filteredOptions = options.filter(option => option.name.toLowerCase().includes(input.toLowerCase()));
+      filteredOptions = this.filterOptions(options, input);
     };
 
     const display = (): void => {
@@ -427,20 +427,40 @@ export class Inquirerer {
     });
   }
 
+
   filterOptions(options: OptionValue[], input: string): OptionValue[] {
+    input = input.toLowerCase(); // Normalize input for case-insensitive comparison
+
+    // Fuzzy matching: Check if all characters of the input can be found in the option name in order
+    const fuzzyMatch = (option: string, input: string) => {
+      const length = input.length;
+      let position = 0; // Position in the input string
+
+      // Iterate over each character in the option name
+      for (let i = 0; i < option.length; i++) {
+        if (option[i] === input[position]) {
+          position++; // Move to the next character in the input
+          if (position === length) { // Check if we've matched all characters
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+
     return options
-      .filter(option => option.name.toLowerCase().startsWith(input.toLowerCase()))
+      .filter(option => fuzzyMatch(option.name.toLowerCase(), input))
       .sort((a, b) => {
         if (a.name < b.name) {
-          return -1; // b first
+          return -1;
         }
         if (a.name > b.name) {
-          return 1; // a is first
+          return 1;
         }
-        return 0; // equal
+        return 0;
       });
   }
-
+  
   getMaxLines(question: { maxDisplayLines?: number }, defaultLength: number): number {
     if (question.maxDisplayLines) {
       return question.maxDisplayLines;

@@ -69,7 +69,7 @@ const main = async () => {
   const question: Question = {
     name: 'fruitSearch',
     type: 'autocomplete',
-    maxDisplayLines: 5,
+    maxDisplayLines: 15,
     options: [
       'Apple', 'Apricot', 'Avocado', 
       'Banana', 'Blackberry', 'Blueberry', 'Boysenberry',
@@ -98,11 +98,11 @@ const main = async () => {
   ]
   
   };
-  // const args3 = await prompter.autocomplete(question);
+  const args3 = await prompter.prompt({}, [question]);
 
   // console.log(args);
   // console.log(args2);
-  // console.log(args3);
+  console.log(args3);
 
 
   const massive = await prompter.prompt({},  [
