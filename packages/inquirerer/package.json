@@ -1,6 +1,6 @@
 {
   "name": "inquirerer",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": "Dan Lynch <pyramation@gmail.com>",
   "description": "inquirerer",
   "main": "index.js",
@@ -34,7 +34,5 @@
     "js-yaml": "^4.1.0",
     "minimist": "^1.2.8"
   },
-  "keywords": [],
-  "devDependencies": {
-  }
+  "keywords": []
 }
