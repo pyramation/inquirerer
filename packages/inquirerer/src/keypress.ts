@@ -1,4 +1,14 @@
+import { Readable } from 'stream';
+
 type KeyHandler = () => void;
+
+interface ProcessWrapper {
+  exit: (code?: number) => never;
+}
+
+const defaultProcessWrapper: ProcessWrapper = {
+  exit: (code?: number) => process.exit(code)
+};
 
 export const KEY_CODES = {
   UP_ARROW: '\u001b[A',
@@ -15,23 +25,38 @@ export const KEY_CODES = {
 export class TerminalKeypress {
   private listeners: Record<string, KeyHandler[]> = {};
   private active: boolean = true;
+  private noTty: boolean;
+  private input: Readable;
+  private proc: ProcessWrapper;
 
-
-  constructor() {
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
-    process.stdin.setEncoding('utf8');
+  constructor(
+    noTty: boolean = false,
+    input: Readable = process.stdin,
+    proc: ProcessWrapper = defaultProcessWrapper,
+  ) {
+    this.noTty = noTty;
+    this.input = input;
+    this.proc = proc;
+    
+    if (this.isTTY()) {
+      (this.input as any).setRawMode(true);
+      this.input.resume();
+      this.input.setEncoding('utf8');
+    }
     this.setupListeners();
   }
 
+  isTTY() {
+    return !this.noTty;
+  }
 
   private setupListeners(): void {
-    process.stdin.on('data', (key: string) => {
+    this.input.on('data', (key: string) => {
       if (!this.active) return;
       const handlers = this.listeners[key];
       handlers?.forEach(handler => handler());
       if (key === KEY_CODES.CTRL_C) { // Ctrl+C
-        process.exit();
+        this.proc.exit(0);
       }
     });
   }
@@ -61,8 +86,8 @@ export class TerminalKeypress {
   }
 
   destroy(): void {
-    process.stdin.setRawMode(false);
-    process.stdin.pause();
-    process.stdin.removeAllListeners('data');
+    (this.input as any).setRawMode(false);
+    this.input.pause();
+    this.input.removeAllListeners('data');
   }
 }

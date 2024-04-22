@@ -1,66 +1,184 @@
-import chalk from 'chalk'; 
+import chalk from 'chalk';
 import readline from 'readline';
+import { Writable, Readable } from 'stream';
 
-import { KEY_CODES,TerminalKeypress } from './keypress';
-import { Question } from './question';
+import { KEY_CODES, TerminalKeypress } from './keypress';
+import { AutocompleteQuestion, CheckboxQuestion, ConfirmQuestion, Question, TextQuestion, Value } from './question';
+import { writeFileSync } from 'fs';
 
-interface Value {
-  name: string,
-  value: boolean
+const requiredMessage = (question: Question) => chalk.red(`The field "${question.name}" is required. Please provide a value.\n`);
+interface PromptContext {
+  numTries: number;
+}
+
+
+function generatePromptMessage(question: Question, ctx: PromptContext): string {
+  let promptMessage = question.message ? `${question.message}\n> ` : `${question.name}:\n> `;
+
+  if (ctx.numTries > 0 && question.required) {
+    promptMessage = requiredMessage(question) + promptMessage;
+  }
+
+  switch (question.type) {
+    case 'confirm':
+      promptMessage += `(y/n)${question.default !== undefined ? ` [${question.default ? 'y' : 'n'}]` : ''}`;
+      break;
+    case 'text':
+      if (question.default) {
+        promptMessage += ` [${question.default}]`;
+      }
+      break;
+    case 'autocomplete':
+    case 'checkbox':
+      // For these types, you might want to show the default selected options if any
+      if (question.options && question.default) {
+        const defaultOptions = Array.isArray(question.default) ? question.default : [question.default];
+        const defaultText = defaultOptions.join(', ');
+        promptMessage += ` [${defaultText}]`;
+      }
+      break;
+  }
+
+  return promptMessage;
 }
 export class Inquirerer {
   private rl: readline.Interface | null;
   private keypress: TerminalKeypress;
   private noTty: boolean;
+  private output: Writable;
 
-  constructor(noTty: boolean = false) {
+  constructor(
+    noTty: boolean = false,
+    input: Readable = process.stdin,
+    output: Writable = process.stdout,
+  ) {
     this.noTty = noTty;
+    this.output = output;
+
     if (!noTty) {
       this.rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
+        input,
+        output
       });
-      this.keypress = new TerminalKeypress();
+      this.keypress = new TerminalKeypress(noTty, input);
     } else {
       this.rl = null;
     }
   }
 
-  // Method to prompt for missing parameters
-  // Method to prompt for missing parameters
-public async prompt<T extends object>(params: T, questions: Question[], usageText?: string): Promise<T> {
-  const obj: any = { ...params };
-
-  if (usageText && Object.values(params).some(value => value === undefined) && !this.noTty) {
-    console.log(usageText);
+  clearScreen() {
+    // same as console.clear()
+    this.output.write('\x1Bc'); // This is the escape sequence to clear the terminal screen.
+  }
+  
+  write(message: string) {
+    this.output.write(message);
+  }
+  
+  log(message: string) {
+    this.output.write(message + '\n');
   }
 
-  for (const question of questions) {
-    if (obj[question.name] === undefined) {
-      if (!this.noTty) {
-        if (this.rl) {
-          obj[question.name] = await new Promise<string | null>((resolve) => {
-            this.rl.question(`Enter ${question.name}: `, (answer) => {
-              resolve(answer ? answer : null);  // Convert empty string to null
-            });
-          });
-        } else {
-          throw new Error("No TTY available and a readline interface is missing.");
-        }
-      } else {
-        // Optionally handle noTty cases, e.g., set defaults or throw errors
-        throw new Error(`Missing required parameter: ${question.name}`);
-      }
+  public async prompt<T extends object>(params: T, questions: Question[], usageText?: string): Promise<T> {
+    const obj: any = { ...params };
+
+    // when interactive and missing a bunch of stuff, we should display to the user 
+    if (usageText && Object.values(params).some(value => value === undefined) && !this.noTty) {
+      this.log(usageText);
     }
+
+    const needsContinue = (question: Question) => {
+      const value = obj[question.name];
+      return (
+        value === undefined ||
+        value === null ||
+        (typeof value === 'string' && value.trim().length === 0)  // Check for empty string, safely trimming it
+      );
+    };
+
+    let index = 0;
+    let numTries = 0;
+    while (index < questions.length) {
+      const question = questions[index];
+      const ctx: PromptContext = {
+        numTries
+      }
+      if (needsContinue(question)) {
+        switch (question.type) {
+          case 'confirm':
+            obj[question.name] = await this.confirm(question as ConfirmQuestion, ctx);
+            break;
+          case 'checkbox':
+            obj[question.name] = await this.checkbox(question as CheckboxQuestion, ctx);
+            break;
+          case 'autocomplete':
+            obj[question.name] = await this.autocomplete(question as AutocompleteQuestion, ctx);
+            break;
+          case 'text':
+          default:
+            obj[question.name] = await this.text(question as TextQuestion, ctx);  // Use promptText instead of text
+            break;
+        }
+        // Check if the question is required and the response is not adequate
+        if (question.required && needsContinue(question)) {
+          // Reset the property to undefined to re-trigger the prompt
+          numTries++;
+          obj[question.name] = undefined;
+          continue;  // Stay on the same question
+        } else if (question.required) {
+          writeFileSync(__dirname + `/${question.name}-text.txt`, JSON.stringify({question, obj}, null, 2))
+        }
+      }
+      index++;  // Move to the next question
+      numTries = 0;
+    }
+
+    return obj as T;
   }
 
-  return obj as T;
-}
+  async confirm(question: ConfirmQuestion, ctx: PromptContext): Promise<boolean> {
+    if (this.noTty || !this.rl) return question.default ?? false;  // Return default if non-interactive
 
+    return new Promise<boolean>((resolve) => {
+      // Construct the prompt with the default option indicated
+      const promptMessage = generatePromptMessage(question, ctx);
+      this.rl.question(promptMessage, (answer) => {
+        const userInput = answer.trim().toLowerCase();
 
+        if (userInput === '') {
+          resolve(question.default ?? false);  // Use default value if input is empty
+        } else if (['yes', 'y'].includes(userInput)) {
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+      });
+    });
+  }
 
+  async text(question: TextQuestion, ctx: PromptContext): Promise<string | null> {
+    if (this.noTty || !this.rl) return question.default ?? null;  // Return default if non-interactive
 
-  async promptCheckbox(_argv: any, question: Question): Promise<Value[]> {
+    let userInput = '';
+
+    return new Promise<string | null>((resolve) => {
+      this.clearScreen(); // Clear the console at the beginning of each input session
+      const promptMessage = generatePromptMessage(question, ctx);
+
+      this.rl.question(promptMessage, (answer) => {  // Include the prompt directly in the question method
+        userInput = answer;
+        if (userInput.trim() !== '') {
+          resolve(userInput);  // Return input if not empty
+        } else {
+          resolve(null);  // Return null if empty and not required
+        }
+      });
+    });
+  }
+
+  async checkbox(question: CheckboxQuestion, ctx: PromptContext): Promise<Value[]> {
+    if (this.noTty || !this.rl) return question.default ?? [];  // Return default if non-interactive
+
     this.keypress.resume();
     const options = question.options || [];
     let input = ''; // Search input
@@ -69,14 +187,16 @@ public async prompt<T extends object>(params: T, questions: Question[], usageTex
     let startIndex = 0; // Start index for visible options
     const maxLines = question.maxDisplayLines || options.length; // Use provided max or total options
     const selections: boolean[] = new Array(options.length).fill(false);
-  
+
     const updateFilteredOptions = (): void => {
       filteredOptions = options.filter(option => option.toLowerCase().includes(input.toLowerCase()));
     };
-  
+
     const display = (): void => {
-      console.clear();
-      console.log(`Search: ${input}`);
+      this.clearScreen();
+      const promptMessage = generatePromptMessage(question, ctx);
+      this.write(promptMessage);
+      this.log(`${input}`);
       const endIndex = Math.min(startIndex + maxLines, filteredOptions.length);
       for (let i = startIndex; i < endIndex; i++) {
         const option = filteredOptions[i];
@@ -84,19 +204,19 @@ public async prompt<T extends object>(params: T, questions: Question[], usageTex
         const marker = isSelected ? '>' : ' ';
         const isChecked = selections[options.indexOf(option)] ? '◉' : '○'; // Use the original index in options
         const line = `${marker} ${isChecked} ${option}`;
-        console.log(isSelected ? chalk.blue(line) : line);
+        this.log(isSelected ? chalk.blue(line) : line);
       }
     };
-  
+
     display();
-  
+
     // Handling BACKSPACE key
     this.keypress.on(KEY_CODES.BACKSPACE, () => {
       input = input.slice(0, -1);
       updateFilteredOptions();
       display();
     });
-  
+
     // Register alphanumeric keypresses to accumulate input, excluding space
     'abcdefghijklmnopqrstuvwxyz0123456789'.split('').forEach(char => {
       this.keypress.on(char, () => {
@@ -105,7 +225,7 @@ public async prompt<T extends object>(params: T, questions: Question[], usageTex
         display();
       });
     });
-  
+
     this.keypress.on(KEY_CODES.UP_ARROW, () => {
       selectedIndex = selectedIndex > 0 ? selectedIndex - 1 : filteredOptions.length - 1;
       if (selectedIndex < startIndex) {
@@ -115,7 +235,7 @@ public async prompt<T extends object>(params: T, questions: Question[], usageTex
       }
       display();
     });
-  
+
     this.keypress.on(KEY_CODES.DOWN_ARROW, () => {
       selectedIndex = (selectedIndex + 1) % filteredOptions.length;
       if (selectedIndex >= startIndex + maxLines) {
@@ -125,13 +245,13 @@ public async prompt<T extends object>(params: T, questions: Question[], usageTex
       }
       display();
     });
-  
+
     this.keypress.on(KEY_CODES.SPACE, () => {
       // Map filtered index back to the original index in options
       selections[options.indexOf(filteredOptions[selectedIndex])] = !selections[options.indexOf(filteredOptions[selectedIndex])];
       display();
     });
-  
+
     return new Promise<Value[]>(resolve => {
       this.keypress.on(KEY_CODES.ENTER, () => {
         this.keypress.pause();
@@ -159,7 +279,9 @@ public async prompt<T extends object>(params: T, questions: Question[], usageTex
       });
     });
   }
-  async promptAutocomplete(question: Question): Promise<string> {
+  async autocomplete(question: AutocompleteQuestion, ctx: PromptContext): Promise<string> {
+    if (this.noTty || !this.rl) return question.default ?? false;  // Return default if non-interactive
+
     this.keypress.resume();
     const options = question.options || [];
     let input = '';
@@ -169,16 +291,17 @@ public async prompt<T extends object>(params: T, questions: Question[], usageTex
     const maxLines = question.maxDisplayLines || options.length;  // Use provided max or total options
 
     const display = (): void => {
-      console.clear();
-      console.log(`Search: ${input}`);
+      this.clearScreen();
+      const promptMessage = generatePromptMessage(question, ctx);
+      this.log(promptMessage);
       // Determine the range of options to display
       const endIndex = Math.min(startIndex + maxLines, filteredOptions.length);
       for (let i = startIndex; i < endIndex; i++) {
         const option = filteredOptions[i];
         if (i === selectedIndex) {
-          console.log(chalk.blue('> ' + option)); // Highlight the selected option with chalk
+          this.log(chalk.blue('> ' + option)); // Highlight the selected option with chalk
         } else {
-          console.log('  ' + option);
+          this.log('  ' + option);
         }
       }
     };
@@ -241,7 +364,6 @@ public async prompt<T extends object>(params: T, questions: Question[], usageTex
       });
     });
   }
-
 
   filterOptions(options: string[], input: string): string[] {
     return options

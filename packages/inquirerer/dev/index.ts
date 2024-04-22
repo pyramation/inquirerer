@@ -2,8 +2,8 @@
 import minimist from 'minimist';
 
 import { Inquirerer } from "../src";
-import { displayVersion } from '../src/utils';
 import { Question } from '../src/question';
+import { displayVersion } from '../src/utils';
 
 const argv = minimist(process.argv.slice(2), {
   alias: {
@@ -24,47 +24,47 @@ if (argv.version) {
 const prompter = new Inquirerer();
 
 const main = async () => {
-  const args = await prompter.prompt(argv, [
-    {
-      name: 'name'
-    },
-    {
-      name: 'flower'
-    }
-  ]);
+  // const args = await prompter.prompt(argv, [
+  //   {
+  //     name: 'name'
+  //   },
+  //   {
+  //     name: 'flower'
+  //   }
+  // ]);
   
-  const args2 = await prompter.promptCheckbox(argv, {
-    name: 'name',
-    maxDisplayLines: 8,
-    returnFullResults: false,
-    required: true,
-    options: [
-      'Apple', 'Apricot', 'Avocado', 
-      'Banana', 'Blackberry', 'Blueberry', 'Boysenberry',
-      'Cherry', 'Clementine', 'Coconut', 'Cranberry', 
-      'Date', 'Durian',
-      'Elderberry',
-      'Fig',
-      'Grape', 'Grapefruit', 'Guava',
-      'Honeydew',
-      'Kiwi', 'Kumquat',
-      'Lemon', 'Lime', 'Lychee',
-      'Mango', 'Melon', 'Mulberry',
-      'Nectarine',
-      'Orange',
-      'Papaya', 'Peach', 'Pear', 'Persimmon', 'Pineapple', 'Plum', 'Pomegranate', 'Pomelo',
-      'Quince',
-      'Raspberry', 'Redcurrant',
-      'Strawberry', 'Starfruit',
-      'Tangerine',
-      'Ugli Fruit',
-      'Vanilla',
-      'Watermelon',
-      'Xigua (Chinese Watermelon)',
-      'Yellow Plum',
-      'Zucchini'
-  ]
-  });
+  // const args2 = await prompter.checkbox({
+  //   name: 'name',
+  //   maxDisplayLines: 8,
+  //   returnFullResults: false,
+  //   required: true,
+  //   options: [
+  //     'Apple', 'Apricot', 'Avocado', 
+  //     'Banana', 'Blackberry', 'Blueberry', 'Boysenberry',
+  //     'Cherry', 'Clementine', 'Coconut', 'Cranberry', 
+  //     'Date', 'Durian',
+  //     'Elderberry',
+  //     'Fig',
+  //     'Grape', 'Grapefruit', 'Guava',
+  //     'Honeydew',
+  //     'Kiwi', 'Kumquat',
+  //     'Lemon', 'Lime', 'Lychee',
+  //     'Mango', 'Melon', 'Mulberry',
+  //     'Nectarine',
+  //     'Orange',
+  //     'Papaya', 'Peach', 'Pear', 'Persimmon', 'Pineapple', 'Plum', 'Pomegranate', 'Pomelo',
+  //     'Quince',
+  //     'Raspberry', 'Redcurrant',
+  //     'Strawberry', 'Starfruit',
+  //     'Tangerine',
+  //     'Ugli Fruit',
+  //     'Vanilla',
+  //     'Watermelon',
+  //     'Xigua (Chinese Watermelon)',
+  //     'Yellow Plum',
+  //     'Zucchini'
+  // ]
+  // });
 
   const question: Question = {
     name: 'fruitSearch',
@@ -98,12 +98,46 @@ const main = async () => {
   ]
   
   };
-  const args3 = await prompter.promptAutocomplete(question);
+  // const args3 = await prompter.autocomplete(question);
 
-  console.log(args);
-  console.log(args2);
-  console.log(args3);
+  // console.log(args);
+  // console.log(args2);
+  // console.log(args3);
 
+  const massive = await prompter.prompt({}, [
+    question,
+    {
+      type: 'text',
+      name: 'first',
+      message: 'Enter your first name'
+    },
+    {
+      type: 'text',
+      name: 'last',
+      required: true,
+      message: 'Enter your last name'
+    },
+    {
+      ...question,
+      name: 'autocomp',
+      type: 'autocomplete',
+      message: 'Enter your completion',
+    },
+    {
+      ...question,
+      name: 'this_is_NOT_required',
+      type: 'checkbox',
+      required: true
+    },
+    {
+      ...question,
+      name: 'this_is_required',
+      type: 'checkbox',
+      required: true
+    }
+  ])
+
+  console.log({massive})
   prompter.close();
 };
 

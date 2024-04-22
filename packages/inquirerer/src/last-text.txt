@@ -1,0 +1,13 @@
+{
+  "question": {
+    "type": "text",
+    "name": "last",
+    "required": true,
+    "message": "Enter your last name"
+  },
+  "obj": {
+    "fruitSearch": "Apple",
+    "first": null,
+    "last": "sdf"
+  }
+}
