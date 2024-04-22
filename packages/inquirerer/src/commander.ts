@@ -18,7 +18,7 @@ export interface CLIOptions {
 
 export const defaultCLIOptions: CLIOptions = {
   version: `inquirerer@${getVersion()}`,
-  noTty: !process.stdout.isTTY,
+  noTty: false,
   input: process.stdin,
   output: process.stdout,
   minimistOpts: {
