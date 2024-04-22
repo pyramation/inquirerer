@@ -401,12 +401,7 @@ export class Inquirerer {
   }
 
   async text(question: TextQuestion, ctx: PromptContext): Promise<string | null> {
-    if (this.noTty || !this.rl) {
-      if ('default' in question) {
-        return question.default;
-      }
-      return;
-    }
+    if (this.noTty || !this.rl) return question.default ?? null;  // Return default if non-interactive
 
     let input = '';
 
@@ -531,12 +526,7 @@ export class Inquirerer {
   }
 
   async autocomplete(question: AutocompleteQuestion, ctx: PromptContext): Promise<any> {
-    if (this.noTty || !this.rl) {
-      if ('default' in question) {
-        return question.default;
-      }
-      return;
-    }
+    if (this.noTty || !this.rl) return question.default ?? false;  // Return default if non-interactive
 
     this.keypress.resume();
     const options = this.sanitizeOptions(question);
