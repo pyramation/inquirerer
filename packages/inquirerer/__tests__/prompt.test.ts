@@ -138,32 +138,6 @@ describe('Inquirerer', () => {
     expect(transformResults).toMatchSnapshot();
   });
 
-  xit('handles autocomplete selection with key events', async () => {
-    // Simulate typing 'fir', navigating down to the second option, and selecting it
-    // enqueueInputResponse({ type: 'read', value: 'fir' });
-    // enqueueInputResponse({ type: 'key', value: 'DOWN_ARROW' });
-
-    const prompter = new Inquirerer(false, mockInput, mockOutput);
-    const questions: Question[] = [{
-      name: 'autocompleteField',
-      type: 'autocomplete',
-      options: ['first option', 'firry second option', 'firry third option']
-    }];
-    const initialParams = {};
-
-    enqueueInputResponse({ type: 'key', value: 'f' });
-    enqueueInputResponse({ type: 'key', value: KEY_SEQUENCES.DOWN_ARROW });
-    enqueueInputResponse({ type: 'key', value: KEY_SEQUENCES.DOWN_ARROW });
-    enqueueInputResponse({ type: 'key', value: KEY_SEQUENCES.ENTER });
-
-    const result = await prompter.prompt(initialParams, questions);
-
-    // Expected to select the second option
-    expect(result).toEqual({ autocompleteField: 'second option' });
-    expect(writeResults).toMatchSnapshot();
-    expect(transformResults).toMatchSnapshot();
-  });
-
   it('handles combined key events and readline inputs', async () => {
 
     const prompter = new Inquirerer(false, mockInput, mockOutput);
