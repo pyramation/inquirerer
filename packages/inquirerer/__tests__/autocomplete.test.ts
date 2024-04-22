@@ -11,7 +11,7 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-const snap = (str: any) => expect(stripAnsi(JSON.stringify(str, null, 2))).toMatchSnapshot();
+const snap = (str: any) => expect(str).toMatchSnapshot();
 
 describe('Inquirerer', () => {
   let mockWrite: jest.Mock;
@@ -75,7 +75,7 @@ describe('Inquirerer', () => {
     mockOutput = new Writable({
       write: (chunk, encoding, callback) => {
         const str = chunk.toString();
-        writeResults.push(str);
+        writeResults.push(stripAnsi(str));
         mockWrite(str);
         callback();
       }
@@ -85,7 +85,7 @@ describe('Inquirerer', () => {
     transformStream = new Transform({
       transform(chunk, encoding, callback) {
         const data = chunk.toString();
-        transformResults.push(data);
+        transformResults.push(stripAnsi(data));
         this.push(chunk); // Pass the data through
         callback();
       }

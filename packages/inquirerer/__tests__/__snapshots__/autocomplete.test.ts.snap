@@ -1,37 +1,53 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`Inquirerer handles autocomplete selection with key events 1`] = `
-"{
+{
   "result": {
-    "autocompleteField": "firry third option"
-  }
-}"
+    "autocompleteField": "firry third option",
+  },
+}
 `;
 
 exports[`Inquirerer handles autocomplete selection with key events 2`] = `
-"[
-  "\\u001bc",
-  "autocompleteField:\\n> \\n",
-  "\\u001b[34m> first option\\u001b[39m\\n",
-  "  firry second option\\n",
-  "  firry third option\\n",
-  "\\u001bc",
-  "autocompleteField:\\n> \\n",
-  "  first option\\n",
-  "\\u001b[34m> firry second option\\u001b[39m\\n",
-  "  firry third option\\n",
-  "\\u001bc",
-  "autocompleteField:\\n> \\n",
-  "  first option\\n",
-  "  firry second option\\n",
-  "\\u001b[34m> firry third option\\u001b[39m\\n"
-]"
+[
+  "",
+  "autocompleteField:
+> 
+",
+  "> first option
+",
+  "  firry second option
+",
+  "  firry third option
+",
+  "",
+  "autocompleteField:
+> 
+",
+  "  first option
+",
+  "> firry second option
+",
+  "  firry third option
+",
+  "",
+  "autocompleteField:
+> 
+",
+  "  first option
+",
+  "  firry second option
+",
+  "> firry third option
+",
+]
 `;
 
 exports[`Inquirerer handles autocomplete selection with key events 3`] = `
-"[
-  "\\u001b[B",
-  "\\u001b[B",
-  "\\r"
-]"
+[
+  "",
+  "",
+  "
+",
+]
 `;
