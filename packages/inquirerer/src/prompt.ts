@@ -125,6 +125,10 @@ export class Inquirerer {
           numTries++;
           obj[question.name] = undefined;
           continue;  // Stay on the same question
+        } else {
+          if ('default' in question) {
+            obj[question.name] = question.default;
+          }
         }
       }
       index++;  // Move to the next question

@@ -36,7 +36,8 @@ export class CLI {
 
   constructor(
     commandHandler: CommandHandler,
-    options: Partial<CLIOptions>
+    options: Partial<CLIOptions>,
+    argv?: any
   ) {
     const { input, output, ...optionsWithoutIO } = options;
     const { input: defaultInput, output: defaultOutput, ...defaultOptionsWithoutIO } = defaultCLIOptions;
@@ -45,12 +46,13 @@ export class CLI {
     mergedOptions.output = output || defaultOutput;
     this.options = mergedOptions as CLIOptions;
 
-    this.argv = minimist(process.argv.slice(2), this.options.minimistOpts);
-    this.prompter = new Inquirerer();
+    this.argv = argv ? argv : minimist(process.argv.slice(2), this.options.minimistOpts);
+    this.prompter = new Inquirerer(this.options.noTty, this.options.input, this.options.output);
     this.commandHandler = commandHandler;
+
   }
 
-  public run(): void {
+  public async run(): Promise<void> {
     if (!('tty' in this.argv)) {
       this.argv.tty = true;
     }
@@ -60,8 +62,9 @@ export class CLI {
       process.exit(0);
     }
 
-    this.commandHandler(this.argv, this.prompter, this.options);
+    const args = await this.commandHandler(this.argv, this.prompter, this.options);
     this.prompter.close();
+    return args;
   }
 }
 
