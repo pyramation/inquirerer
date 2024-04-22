@@ -57,11 +57,21 @@
     "required": true
   },
   "obj": {
-    "fruitSearch": "Apple",
-    "first": null,
-    "last": "sdf",
-    "autocomp": "Apple",
-    "this_is_NOT_required": [],
-    "this_is_required": []
+    "fruitSearch": "Apricot",
+    "first": "adsf",
+    "last": "asdf",
+    "autocomp": "Apricot",
+    "this_is_NOT_required": [
+      {
+        "name": "Apricot",
+        "value": true
+      }
+    ],
+    "this_is_required": [
+      {
+        "name": "Apricot",
+        "value": true
+      }
+    ]
   }
 }
