@@ -125,8 +125,6 @@ export class Inquirerer {
           numTries++;
           obj[question.name] = undefined;
           continue;  // Stay on the same question
-        } else if (question.required) {
-          writeFileSync(__dirname + `/${question.name}-text.txt`, JSON.stringify({question, obj}, null, 2))
         }
       }
       index++;  // Move to the next question
