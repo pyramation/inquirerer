@@ -66,6 +66,26 @@ const main = async () => {
   // ]
   // });
 
+  const regex: Question[] = [
+    {
+      name: 'email',
+      type: 'text',
+      message: 'Enter your email:',
+      pattern: '^([a-zA-Z0-9_\\-\\.]+)@([a-zA-Z0-9_\\-\\.]+)\\.([a-zA-Z]{2,5})$',
+      required: true
+    },
+    {
+      name: 'website',
+      type: 'text',
+      message: 'Enter your website URL:',
+      pattern: '^(http|https)://[a-zA-Z0-9-\\.]+\\.[a-zA-Z]{2,5}(/[a-zA-Z0-9-._~:/?#[\\]@!$&\'()*+,;=]*)?$',
+      required: false
+    }
+  ];
+
+  const p = await prompter.prompt({}, regex);
+  console.log(p);
+
   const question: Question = {
     name: 'fruitSearch',
     type: 'autocomplete',
@@ -106,18 +126,18 @@ const main = async () => {
 
 
   const massive = await prompter.prompt({},  [
-    // question,
-    // {
-    //   type: 'text',
-    //   name: 'first',
-    //   message: 'Enter your first name'
-    // },
-    // {
-    //   type: 'text',
-    //   name: 'last',
-    //   required: true,
-    //   message: 'Enter your last name'
-    // },
+    question,
+    {
+      type: 'text',
+      name: 'first',
+      message: 'Enter your first name'
+    },
+    {
+      type: 'text',
+      name: 'last',
+      required: true,
+      message: 'Enter your last name'
+    },
     // {
     //   ...question,
     //   name: 'autocomp',
@@ -188,12 +208,13 @@ const main = async () => {
     {
       name: 'checkbox',
       type: 'checkbox',
+      required: true,
       options: [
-        { name: 'Apple', value: 'Fruit01' },
-        { name: 'Banana', value: 'Fruit02' },
-        { name: 'Cherry', value: 'Fruit03' },
-        { name: 'Grape', value: 'Fruit04' },
-        { name: 'Mango', value: 'Fruit05' }
+        { name: 'RApple', value: 'Fruit01' },
+        { name: 'RBanana', value: 'Fruit02' },
+        { name: 'RCherry', value: 'Fruit03' },
+        { name: 'RGrape', value: 'Fruit04' },
+        { name: 'RMango', value: 'Fruit05' }
       ]
     },
     {

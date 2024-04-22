@@ -3,11 +3,63 @@ import readline from 'readline';
 import { Readable, Writable } from 'stream';
 
 import { KEY_CODES, TerminalKeypress } from './keypress';
-import { AutocompleteQuestion, BaseQuestion, CheckboxQuestion, ConfirmQuestion, OptionValue, Question, TextQuestion, Value } from './question';
+import { AutocompleteQuestion, CheckboxQuestion, ConfirmQuestion, OptionValue, Question, TextQuestion, Validation, Value } from './question';
 
-const requiredMessage = (question: Question) => chalk.red(`The field "${question.name}" is required. Please provide a value.\n`);
-interface PromptContext {
-  numTries: number;
+const validationMessage = (question: Question, ctx: PromptContext): string => {
+  if (ctx.numTries === 0 || ctx.validation.success) {
+    return ''; // No message if first attempt or validation was successful
+  }
+
+  if (ctx.validation.reason) {
+    return chalk.red(`The field "${question.name}" is invalid: ${ctx.validation.reason}\n`);
+  }
+
+  switch (ctx.validation.type) {
+    case 'required':
+      return chalk.red(`The field "${question.name}" is required. Please provide a value.\n`);
+    case 'pattern':
+      return chalk.red(`The field "${question.name}" does not match the pattern: ${question.pattern}.\n`);
+    default:
+      return chalk.red(`The field "${question.name}" is invalid. Please try again.\n`);
+  }
+
+  return ''; // Return empty string if no specific conditions are met
+};
+class PromptContext {
+  numTries: number = 0;
+  needsInput: boolean = true;
+  validation: Validation = { success: false };
+
+  constructor() {}
+
+  tryAgain(validation: Partial<Validation>): void {
+    this.numTries++;
+    this.needsInput = true;
+    this.validation = { ...this.validation, ...validation, success: false };
+  }
+
+  nextQuestion(): void {
+    this.numTries = 0;
+    this.needsInput = false;
+    this.validation = { success: true };
+  }
+
+  process(validation: Validation | boolean): Validation {
+    if (typeof validation === 'boolean') {
+      if (validation) {
+        this.nextQuestion();
+      } else {
+        this.tryAgain({ type: 'validation' });
+      }
+    } else {
+      if (validation.success) {
+        this.nextQuestion();
+      } else {
+        this.tryAgain(validation);
+      }
+    }
+    return this.validation;
+  }
 }
 
 
@@ -18,9 +70,7 @@ function generatePromptMessage(question: Question, ctx: PromptContext): string {
   }
   promptMessage += `${chalk.white('[')}${chalk.green('--' + question.name)}${chalk.white(']:')}\n`;
 
-  if (ctx.numTries > 0 && question.required) {
-    promptMessage = requiredMessage(question) + promptMessage;
-  }
+  promptMessage = validationMessage(question, ctx) + promptMessage;
 
   switch (question.type) {
     case 'confirm':
@@ -121,72 +171,129 @@ export class Inquirerer {
     this.log(prompt);
   }
 
+  private isValidatableAnswer(answer: any): boolean {
+    return answer !== undefined;
+  }
+
+  private validateAnswer(question: Question, answer: any, obj: any, ctx: PromptContext): Validation {
+    const validation = this.validateAnswerPattern(question, answer);
+    if (!validation.success) {
+      return ctx.process(validation);
+    }
+
+    if (question.validate) {
+      const customValidation = question.validate(answer, obj);
+      return ctx.process(customValidation);
+    }
+
+    return ctx.process({
+      success: true
+    });
+  }
+
+  private validateAnswerPattern(question: Question, answer: any): Validation {
+    if (question.pattern && typeof answer === 'string') {
+      const regex = new RegExp(question.pattern);
+      const success = regex.test(answer);
+      if (success) {
+        return {
+          success
+        }
+      } else {
+        return {
+          type: 'pattern',
+          success: false,
+          reason: question.pattern
+        }
+      }
+    }
+    return {
+      success: true
+    }
+  }
+
+  private isEmptyAnswer(answer: any): boolean {
+    switch (true) {
+      case answer === undefined:
+      case answer === null:
+      case answer === '':
+      case Array.isArray(answer) && answer.length === 0:
+        return true;
+    }
+    return false;
+  }
+
+  private sanitizeAnswer(question: Question, answer: any, obj: any): any {
+    if (question.sanitize) {
+      return question.sanitize(answer, obj);
+    }
+    return answer;
+  }
+
   public async prompt<T extends object>(params: T, questions: Question[], usageText?: string): Promise<T> {
     const obj: any = { ...params };
 
-    // when interactive and missing a bunch of stuff, we should display to the user 
     if (usageText && Object.values(params).some(value => value === undefined) && !this.noTty) {
       this.log(usageText);
     }
 
-    const needsContinue = (question: Question) => {
-      const value = obj[question.name];
-      return (
-        value === undefined ||
-        value === null ||
-        (typeof value === 'string' && value.trim().length === 0)  // Check for empty string, safely trimming it
-      );
-    };
-
     let index = 0;
-    let numTries = 0;
     while (index < questions.length) {
       const question = questions[index];
+      const ctx: PromptContext = new PromptContext();
 
+      // Apply default value if applicable
       if ('default' in question && (this.useDefaults || question.useDefault)) {
         obj[question.name] = question.default;
         index++;  // Move to the next question
-        continue;
+        continue;  // Skip the rest of the loop since the default is applied
       }
 
-      const ctx: PromptContext = {
-        numTries
-      }
-      if (needsContinue(question)) {
-        switch (question.type) {
-          case 'confirm':
-            obj[question.name] = await this.confirm(question as ConfirmQuestion, ctx);
-            break;
-          case 'checkbox':
-            obj[question.name] = await this.checkbox(question as CheckboxQuestion, ctx);
-            break;
-          case 'autocomplete':
-            obj[question.name] = await this.autocomplete(question as AutocompleteQuestion, ctx);
-            break;
-          case 'text':
-          default:
-            obj[question.name] = await this.text(question as TextQuestion, ctx);  // Use promptText instead of text
-            break;
-        }
-        // Check if the question is required and the response is not adequate
-        if (question.required && needsContinue(question)) {
-          // Reset the property to undefined to re-trigger the prompt
-          numTries++;
-          obj[question.name] = undefined;
-          continue;  // Stay on the same question
-        } else {
-          if ('default' in question) {
-            obj[question.name] = question.default;
+      while (ctx.needsInput) {
+        obj[question.name] = await this.handleQuestionType(question, ctx);
+
+        if (this.isValidatableAnswer(obj[question.name])) {
+          obj[question.name] = this.sanitizeAnswer(question, obj[question.name], obj);
+          const validationResult = this.validateAnswer(question, obj[question.name], obj, ctx);
+          if (!validationResult.success) {
+            obj[question.name] = undefined; // Force re-validation
+            continue; // Explicitly continue the loop on same question if validation fails
           }
         }
+
+        if (question.required && this.isEmptyAnswer(obj[question.name])) {
+          obj[question.name] = undefined; // Reset to undefined to force re-entry
+          ctx.tryAgain({
+            type: 'required'
+          });
+          continue; // Continue looping on same question if the required input is not provided
+        } else if ('default' in question) {
+          obj[question.name] = question.default;
+          ctx.nextQuestion();
+          index++;
+          continue;
+        }
+        ctx.nextQuestion();
       }
-      index++;  // Move to the next question
-      numTries = 0;
+      index++; // Move to the next question
     }
 
     return obj as T;
   }
 
+  private async handleQuestionType(question: Question, ctx: PromptContext): Promise<any> {
+    switch (question.type) {
+      case 'confirm':
+        return this.confirm(question as ConfirmQuestion, ctx);
+      case 'checkbox':
+        return this.checkbox(question as CheckboxQuestion, ctx);
+      case 'autocomplete':
+        return this.autocomplete(question as AutocompleteQuestion, ctx);
+      case 'text':
+      default:
+        return this.text(question as TextQuestion, ctx);
+    }
+  }
   async confirm(question: ConfirmQuestion, ctx: PromptContext): Promise<boolean> {
     if (this.noTty || !this.rl) return question.default ?? false;  // Return default if non-interactive
 

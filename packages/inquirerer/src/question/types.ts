@@ -7,6 +7,12 @@ export interface OptionValue {
   value: any;
 }
 
+export interface Validation {
+  type?: string;
+  success: boolean;
+  reason?: string;
+}
+
 export interface BaseQuestion {
     name: string;
     type: string;
@@ -14,6 +20,9 @@ export interface BaseQuestion {
     useDefault?: boolean;
     required?: boolean;
     message?: string;
+    validate?: (input: any, obj: any) => Validation | boolean;
+    sanitize?: (input: any, obj: any) => any;
+    pattern?: string;
   }
   
   export interface ConfirmQuestion extends BaseQuestion {
