@@ -1,7 +1,7 @@
 import readline from 'readline';
 import { Readable, Writable, Transform } from 'stream';
 
-
+import stripAnsi from 'strip-ansi';
 import { Inquirerer } from '../src';
 import { Question } from '../src/question';
 
@@ -10,6 +10,8 @@ jest.mock('readline');
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+const snap = (str: any) => expect(stripAnsi(JSON.stringify(str, null, 2)));
 
 describe('Inquirerer', () => {
   let mockWrite: jest.Mock;
@@ -113,8 +115,8 @@ describe('Inquirerer', () => {
 
     expect(result).toEqual(expectedResult);
     // expect(mockWrite).toHaveBeenCalledWith(expect.stringContaining('username:\n> '));
-    expect(writeResults).toMatchSnapshot();
-    expect(transformResults).toMatchSnapshot();
+    snap(writeResults);
+    snap(transformResults);
   });
 
   it('handles multiple questions', async () => {
@@ -134,8 +136,8 @@ describe('Inquirerer', () => {
       firstQuestion: 'first question answer',
       secondQuestion: 'second question answer'
     });
-    expect(writeResults).toMatchSnapshot();
-    expect(transformResults).toMatchSnapshot();
+    snap(writeResults);
+    snap(transformResults);
   });
 
   it('handles combined key events and readline inputs', async () => {
@@ -184,7 +186,7 @@ describe('Inquirerer', () => {
 
     const result = await prompter.prompt(initialParams, questions);
 
-    expect(result).toMatchSnapshot();
+    snap(result);
   });
 
   it('checkbox w/options', async () => {
@@ -212,7 +214,7 @@ describe('Inquirerer', () => {
 
     const result = await prompter.prompt(initialParams, questions);
 
-    expect(result).toMatchSnapshot();
+    snap(result);
   });
 
   it('handles readline inputs', async () => {

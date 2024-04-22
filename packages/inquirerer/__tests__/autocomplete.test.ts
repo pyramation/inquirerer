@@ -1,7 +1,7 @@
 import readline from 'readline';
 import { Readable, Writable, Transform } from 'stream';
 
-
+import stripAnsi from 'strip-ansi';
 import { Inquirerer } from '../src';
 import { Question } from '../src/question';
 
@@ -10,6 +10,8 @@ jest.mock('readline');
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+const snap = (str: any) => expect(stripAnsi(JSON.stringify(str, null, 2))).toMatchSnapshot();
 
 describe('Inquirerer', () => {
   let mockWrite: jest.Mock;
@@ -118,9 +120,9 @@ describe('Inquirerer', () => {
 
     // Expected to select the second option
     // expect(result).toEqual({ autocompleteField: 'second option' });
-    expect({result}).toMatchSnapshot();
-    expect(writeResults).toMatchSnapshot();
-    expect(transformResults).toMatchSnapshot();
+    snap({result});
+    snap(writeResults);
+    snap(transformResults);
   });
 
 
