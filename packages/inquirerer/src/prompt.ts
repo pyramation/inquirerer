@@ -5,6 +5,13 @@ import { Readable, Writable } from 'stream';
 import { KEY_CODES, TerminalKeypress } from './keypress';
 import { AutocompleteQuestion, CheckboxQuestion, ConfirmQuestion, OptionValue, Question, TextQuestion, Validation, Value } from './question';
 
+interface ManPageInfo {
+  commandName: string;
+  questions: Question[];
+  author?: string;
+  description?: string;
+}
+
 const validationMessage = (question: Question, ctx: PromptContext): string => {
   if (ctx.numTries === 0 || ctx.validation.success) {
     return ''; // No message if first attempt or validation was successful
@@ -30,7 +37,7 @@ class PromptContext {
   needsInput: boolean = true;
   validation: Validation = { success: false };
 
-  constructor() {}
+  constructor() { }
 
   tryAgain(validation: Partial<Validation>): void {
     this.numTries++;
@@ -171,6 +178,56 @@ export class Inquirerer {
     this.log(prompt);
   }
 
+  generateManPage(opts: ManPageInfo): string {
+
+    let manPage = `NAME\n\t${opts.commandName} ${opts.description ?? ''}\n\n`;
+
+    // Constructing the SYNOPSIS section with required and optional arguments
+    let requiredArgs = '';
+    let optionalArgs = '';
+
+    opts.questions.forEach(question => {
+      if (question.required) {
+        requiredArgs += ` --${question.name} <${question.name}>`;
+      } else {
+        optionalArgs += ` [--${question.name}${question.default ? `=${question.default}` : ''}]`;
+      }
+    });
+
+    manPage += `SYNOPSIS\n\t${opts.commandName}${requiredArgs}${optionalArgs}\n\n`;
+    manPage += `DESCRIPTION\n\tUse this command to interact with the application. It supports the following options:\n\n`;
+
+    opts.questions.forEach(question => {
+      manPage += `${question.name.toUpperCase()}\n`;
+      manPage += `\tType: ${question.type}\n`;
+      if (question.message) {
+        manPage += `\tSummary: ${question.message}\n`;
+      }
+      if (question.description) {
+        manPage += `\tDescription: ${question.description}\n`;
+      }
+      if ('options' in question) {
+        const optionsList = Array.isArray(question.options)
+          ? question.options.map(opt => typeof opt === 'string' ? opt : `${opt.name} (${opt.value})`).join(', ')
+          : '';
+        manPage += `\tOptions: ${optionsList}\n`;
+      }
+      if (question.default !== undefined) {
+        manPage += `\tDefault: ${JSON.stringify(question.default)}\n`;
+      }
+      if (question.required) {
+        manPage += `\tRequired: Yes\n`;
+      } else {
+        manPage += `\tRequired: No\n`;
+      }
+      manPage += '\n';
+    });
+
+    manPage += `EXAMPLES\n\tExample usage of \`${opts.commandName}\`.\n\t$ ${opts.commandName}${requiredArgs}${optionalArgs}\n\n`;
+    manPage += opts.author ? `AUTHOR\n\t${opts.author}\n` : '';
+    return manPage;
+  }
+
   private isValidatableAnswer(answer: any): boolean {
     return answer !== undefined;
   }
@@ -189,6 +246,23 @@ export class Inquirerer {
     return ctx.process({
       success: true
     });
+  }
+
+  private isValid(question: Question, obj: any, ctx: PromptContext): boolean {
+    if (this.isValidatableAnswer(obj[question.name])) {
+      obj[question.name] = this.sanitizeAnswer(question, obj[question.name], obj);
+      const validationResult = this.validateAnswer(question, obj[question.name], obj, ctx);
+      if (!validationResult.success) {
+        return false;
+      }
+    }
+
+    if (question.required && this.isEmptyAnswer(obj[question.name])) {
+      ctx.tryAgain({ type: 'required' });
+      return false;
+    }
+
+    return true;
   }
 
   private validateAnswerPattern(question: Question, answer: any): Validation {
@@ -230,52 +304,65 @@ export class Inquirerer {
     return answer;
   }
 
-  public async prompt<T extends object>(params: T, questions: Question[], usageText?: string): Promise<T> {
-    const obj: any = { ...params };
 
-    if (usageText && Object.values(params).some(value => value === undefined) && !this.noTty) {
-      this.log(usageText);
+  public async prompt<T extends object>(
+    argv: T,
+    questions: Question[],
+    docs?: {
+      usageText?: string,
+      manPageInfo?: ManPageInfo
+    }
+  ): Promise<T> {
+    const obj: any = { ...argv };
+
+    // Assuming questions is an array of Question objects and argv is the parsed command line arguments object.
+    // @ts-ignore
+    if (this.noTty && questions.some(question => question.required && this.isEmptyAnswer(argv[question.name]))) {
+
+      for (let index = 0; index < questions.length; index++) {
+        const question = questions[index];
+        // Apply default value if applicable
+        if ('default' in question) {
+          obj[question.name] = question.default;
+        }
+      }
+
+      // @ts-ignore
+      if (!questions.some(question => question.required && this.isEmptyAnswer(argv[question.name]))) {
+        return obj as T;
+      }
+
+      // If running in a non-interactive mode and any required argument is missing, handle the error.
+      if (docs?.usageText) {
+        this.log(docs.usageText);
+      } else if (docs?.manPageInfo) {
+        this.log(this.generateManPage(docs.manPageInfo))
+      } else {
+        this.log('Missing required arguments. Please provide all required parameters.');
+      }
+      process.exit(1);
+
     }
 
-    let index = 0;
-    while (index < questions.length) {
+    for (let index = 0; index < questions.length; index++) {
       const question = questions[index];
       const ctx: PromptContext = new PromptContext();
 
       // Apply default value if applicable
       if ('default' in question && (this.useDefaults || question.useDefault)) {
         obj[question.name] = question.default;
-        index++;  // Move to the next question
-        continue;  // Skip the rest of the loop since the default is applied
+        continue;  // Skip to the next question since the default is applied
       }
 
       while (ctx.needsInput) {
         obj[question.name] = await this.handleQuestionType(question, ctx);
 
-        if (this.isValidatableAnswer(obj[question.name])) {
-          obj[question.name] = this.sanitizeAnswer(question, obj[question.name], obj);
-          const validationResult = this.validateAnswer(question, obj[question.name], obj, ctx);
-          if (!validationResult.success) {
-            obj[question.name] = undefined; // Force re-validation
-            continue; // Explicitly continue the loop on same question if validation fails
-          }
-        }
-
-        if (question.required && this.isEmptyAnswer(obj[question.name])) {
-          obj[question.name] = undefined; // Reset to undefined to force re-entry
-          ctx.tryAgain({
-            type: 'required'
-          });
-          continue; // Continue looping on same question if the required input is not provided
-        } else if ('default' in question) {
-          obj[question.name] = question.default;
-          ctx.nextQuestion();
-          index++;
+        if (!this.isValid(question, obj, ctx)) {
           continue;
         }
+        // If input passes validation and is not empty, or not required, move to the next question
         ctx.nextQuestion();
       }
-      index++; // Move to the next question
     }
 
     return obj as T;

@@ -20,6 +20,7 @@ export interface BaseQuestion {
     useDefault?: boolean;
     required?: boolean;
     message?: string;
+    description?: string;
     validate?: (input: any, obj: any) => Validation | boolean;
     sanitize?: (input: any, obj: any) => any;
     pattern?: string;

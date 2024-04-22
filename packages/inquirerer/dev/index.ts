@@ -15,13 +15,16 @@ if (!('tty' in argv)) {
   argv.tty = true;
 }
 
+console.log(argv);
 
 if (argv.version) {
   displayVersion();
   process.exit(0);
 }
 
-const prompter = new Inquirerer();
+const prompter = new Inquirerer({
+  noTty: !argv.tty
+});
 
 const main = async () => {
   // const args = await prompter.prompt(argv, [
