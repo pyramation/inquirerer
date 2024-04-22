@@ -3,7 +3,7 @@ import readline from 'readline';
 import { Readable, Writable } from 'stream';
 
 import { KEY_CODES, TerminalKeypress } from './keypress';
-import { AutocompleteQuestion, BaseQuestion, CheckboxQuestion, ConfirmQuestion, OptionValue,Question, TextQuestion, Value } from './question';
+import { AutocompleteQuestion, BaseQuestion, CheckboxQuestion, ConfirmQuestion, OptionValue, Question, TextQuestion, Value } from './question';
 
 const requiredMessage = (question: Question) => chalk.red(`The field "${question.name}" is required. Please provide a value.\n`);
 interface PromptContext {
@@ -16,7 +16,7 @@ function generatePromptMessage(question: Question, ctx: PromptContext): string {
   if (question.message) {
     promptMessage = chalk.whiteBright(question.message) + '\n';
   }
-  promptMessage += `${chalk.white('[')}${chalk.green('--'+question.name)}${chalk.white(']:')}\n`;
+  promptMessage += `${chalk.white('[')}${chalk.green('--' + question.name)}${chalk.white(']:')}\n`;
 
   if (ctx.numTries > 0 && question.required) {
     promptMessage = requiredMessage(question) + promptMessage;
@@ -82,7 +82,7 @@ export class Inquirerer {
       this.rl = readline.createInterface({
         input,
         // dissallow readline from prompting user, since we'll handle it!
-        output 
+        output
         // : new Writable({
         //   write(chunk, encoding, callback) {
         //     callback(); // Do nothing with the data
@@ -228,7 +228,7 @@ export class Inquirerer {
     if (this.noTty || !this.rl) return question.default ?? [];  // Return default if non-interactive
 
     this.keypress.resume();
-    const options = (question.options ?? []).map(option=>this.getOptionValue(option))
+    const options = this.sanitizeOptions(question);
     let input = ''; // Search input
     let filteredOptions = options;
     let selectedIndex = 0;
@@ -248,7 +248,7 @@ export class Inquirerer {
         const option = filteredOptions[i];
         const isSelected = selectedIndex === i;
         const marker = isSelected ? '>' : ' ';
-        const index = options.map(o=>o.name).indexOf(option.name);
+        const index = options.map(o => o.name).indexOf(option.name);
         if (index >= 0) {
           const isChecked = selections[index] ? '◉' : '○'; // Use the original index in options
           const line = `${marker} ${isChecked} ${option.name}`;
@@ -331,19 +331,11 @@ export class Inquirerer {
     });
   }
 
-  private getOptionValue(option: string | OptionValue): OptionValue {
-    if (typeof option === 'string') {
-      return { name: option, value: option };
-    } else {
-      return { name: option.name, value: option.value };
-    }
-  }
-
   async autocomplete(question: AutocompleteQuestion, ctx: PromptContext): Promise<any> {
     if (this.noTty || !this.rl) return question.default ?? false;  // Return default if non-interactive
 
     this.keypress.resume();
-    const options = (question.options ?? []).map(option => this.getOptionValue(option));
+    const options = this.sanitizeOptions(question);
 
     let input = '';
     let filteredOptions = options;
@@ -422,11 +414,25 @@ export class Inquirerer {
     return new Promise<OptionValue>(resolve => {
       this.keypress.on(KEY_CODES.ENTER, () => {
         this.keypress.pause();
-        resolve(filteredOptions[selectedIndex]?.value || input );
+        resolve(filteredOptions[selectedIndex]?.value || input);
       });
     });
   }
 
+  private getOptionValue(option: string | OptionValue): OptionValue {
+    if (typeof option === 'string') {
+      return { name: option, value: option };
+    } else if (typeof option === 'object' && 'name' in option) {
+      return { name: option.name, value: option.value };
+    } else {
+      return undefined;
+    }
+  }
+
+  private sanitizeOptions(question: AutocompleteQuestion | CheckboxQuestion): OptionValue[] {
+    const options = (question.options ?? []).map(option => this.getOptionValue(option));
+    return options.filter(Boolean);
+  }
 
   filterOptions(options: OptionValue[], input: string): OptionValue[] {
     input = input.toLowerCase(); // Normalize input for case-insensitive comparison
@@ -460,7 +466,7 @@ export class Inquirerer {
         return 0;
       });
   }
-  
+
   getMaxLines(question: { maxDisplayLines?: number }, defaultLength: number): number {
     if (question.maxDisplayLines) {
       return question.maxDisplayLines;
