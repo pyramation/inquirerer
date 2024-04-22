@@ -18,7 +18,7 @@ export interface CLIOptions {
 
 export const defaultCLIOptions: CLIOptions = {
   version: `inquirerer@${getVersion()}`,
-  noTty: false,
+  noTty: !process.stdout.isTTY,
   input: process.stdin,
   output: process.stdout,
   minimistOpts: {
@@ -47,8 +47,9 @@ export class CLI {
     this.options = mergedOptions as CLIOptions;
 
     this.argv = argv ? argv : minimist(process.argv.slice(2), this.options.minimistOpts);
+
     this.prompter = new Inquirerer({
-      noTty: !this.argv.tty ? true : this.options.noTty,
+      noTty: this.options.noTty,
       input: this.options.input,
       output: this.options.output
     });
