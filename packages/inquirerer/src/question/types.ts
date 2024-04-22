@@ -2,6 +2,10 @@ export interface Value {
   name: string;
   value: boolean;
 }
+export interface OptionValue {
+  name: string;
+  value: any;
+}
 
 export interface BaseQuestion {
     name: string;
@@ -19,7 +23,7 @@ export interface BaseQuestion {
   
   export interface AutocompleteQuestion extends BaseQuestion {
     type: 'autocomplete';
-    options: string[];
+    options: (string|OptionValue)[];
     maxDisplayLines?: number;
     returnFullResults?: boolean;
     allowCustomOptions?: boolean;
@@ -27,7 +31,7 @@ export interface BaseQuestion {
   
   export interface CheckboxQuestion extends BaseQuestion {
     type: 'checkbox';
-    options: string[];
+    options: (string|OptionValue)[];
     maxDisplayLines?: number;
     returnFullResults?: boolean;
     default?: Value[];

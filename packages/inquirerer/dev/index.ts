@@ -105,39 +105,122 @@ const main = async () => {
   // console.log(args3);
 
   const massive = await prompter.prompt({}, [
-    question,
+    // question,
+    // {
+    //   type: 'text',
+    //   name: 'first',
+    //   message: 'Enter your first name'
+    // },
+    // {
+    //   type: 'text',
+    //   name: 'last',
+    //   required: true,
+    //   message: 'Enter your last name'
+    // },
+    // {
+    //   ...question,
+    //   name: 'autocomp',
+    //   type: 'autocomplete',
+    //   message: 'Enter your completion',
+    // },
+    // {
+    //   ...question,
+    //   name: 'this_is_NOT_required',
+    //   type: 'checkbox',
+    //   required: true
+    // },
+    // {
+    //   ...question,
+    //   name: 'this_is_required',
+    //   type: 'checkbox',
+    //   required: true
+    // },
+    // {
+    //   name: 'searcher',
+    //   type: 'autocomplete',
+    //   options: [
+    //     'Apple', 'Apricot', 'Avocado', 
+    //     'Banana', 'Blackberry', 'Blueberry', 'Boysenberry',
+    //     'Cherry', 'Clementine', 'Coconut', 'Cranberry', 
+    //     'Date', 'Durian',
+    //     'Elderberry',
+    //     'Fig',
+    //     'Grape', 'Grapefruit', 'Guava',
+    //     'Honeydew',
+    //     'Kiwi', 'Kumquat',
+    //     'Lemon', 'Lime', 'Lychee',
+    //     'Mango', 'Melon', 'Mulberry',
+    //     'Nectarine',
+    //     'Orange',
+    //     'Papaya', 'Peach', 'Pear', 'Persimmon', 'Pineapple', 'Plum', 'Pomegranate', 'Pomelo',
+    //     'Quince',
+    //     'Raspberry', 'Redcurrant',
+    //     'Strawberry', 'Starfruit',
+    //     'Tangerine',
+    //     'Ugli Fruit',
+    //     'Vanilla',
+    //     'Watermelon',
+    //     'Xigua (Chinese Watermelon)',
+    //     'Yellow Plum',
+    //     'Zucchini'
+    //   ]
+    // },
     {
-      type: 'text',
-      name: 'first',
-      message: 'Enter your first name'
+      name: 'text',
+      type: 'text'
     },
     {
-      type: 'text',
-      name: 'last',
-      required: true,
-      message: 'Enter your last name'
+      name: 'confirm',
+      type: 'confirm'
     },
     {
-      ...question,
-      name: 'autocomp',
+      name: 'autocomplete',
       type: 'autocomplete',
-      message: 'Enter your completion',
+      options: [
+        { name: 'Apple', value: 'Fruit01' },
+        { name: 'Banana', value: 'Fruit02' },
+        { name: 'Cherry', value: 'Fruit03' },
+        { name: 'Grape', value: 'Fruit04' },
+        { name: 'Mango', value: 'Fruit05' }
+      ]
     },
     {
-      ...question,
-      name: 'this_is_NOT_required',
+      name: 'checkbox',
       type: 'checkbox',
-      required: true
+      options: [
+        { name: 'Apple', value: 'Fruit01' },
+        { name: 'Banana', value: 'Fruit02' },
+        { name: 'Cherry', value: 'Fruit03' },
+        { name: 'Grape', value: 'Fruit04' },
+        { name: 'Mango', value: 'Fruit05' }
+      ]
     },
     {
-      ...question,
-      name: 'this_is_required',
+      name: 'autocomplete2',
+      type: 'autocomplete',
+      options: [
+        { name: 'Apple', value: 'Fruit01' },
+        { name: 'Banana', value: 'Fruit02' },
+        { name: 'Cherry', value: 'Fruit03' },
+        { name: 'Grape', value: 'Fruit04' },
+        { name: 'Mango', value: 'Fruit05' }
+      ]
+    },
+    {
+      name: 'checkbox2',
       type: 'checkbox',
-      required: true
+      options: [
+        { name: 'Apple', value: 'Fruit01' },
+        { name: 'Banana', value: 'Fruit02' },
+        { name: 'Cherry', value: 'Fruit03' },
+        { name: 'Grape', value: 'Fruit04' },
+        { name: 'Mango', value: 'Fruit05' }
+      ]
     }
+    
   ])
 
-  console.log({massive})
+  console.log(JSON.stringify(massive, null, 2))
   prompter.close();
 };
 

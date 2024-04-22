@@ -11,8 +11,8 @@ exports[`Inquirerer handles autocomplete selection with key events 1`] = `
 exports[`Inquirerer handles autocomplete selection with key events 2`] = `
 [
   "",
-  "autocompleteField:
-> 
+  "[--autocompleteField]:
+$ 
 ",
   "> first option
 ",
@@ -21,8 +21,8 @@ exports[`Inquirerer handles autocomplete selection with key events 2`] = `
   "  firry third option
 ",
   "",
-  "autocompleteField:
-> 
+  "[--autocompleteField]:
+$ 
 ",
   "  first option
 ",
@@ -31,8 +31,8 @@ exports[`Inquirerer handles autocomplete selection with key events 2`] = `
   "  firry third option
 ",
   "",
-  "autocompleteField:
-> 
+  "[--autocompleteField]:
+$ 
 ",
   "  first option
 ",

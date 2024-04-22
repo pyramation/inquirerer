@@ -3,7 +3,7 @@ import readline from 'readline';
 import { Readable, Writable } from 'stream';
 
 import { KEY_CODES, TerminalKeypress } from './keypress';
-import { AutocompleteQuestion, CheckboxQuestion, ConfirmQuestion, Question, TextQuestion, Value } from './question';
+import { AutocompleteQuestion, CheckboxQuestion, ConfirmQuestion, OptionValue,Question, TextQuestion, Value } from './question';
 
 const requiredMessage = (question: Question) => chalk.red(`The field "${question.name}" is required. Please provide a value.\n`);
 interface PromptContext {
@@ -12,7 +12,8 @@ interface PromptContext {
 
 
 function generatePromptMessage(question: Question, ctx: PromptContext): string {
-  let promptMessage = question.message ? `${question.message}\n> ` : `${question.name}:\n> `;
+  let promptMessage = question.message ? question.message : question.name;
+  promptMessage = `${chalk.white('[')}${chalk.green('--'+promptMessage)}${chalk.white(']:')}\n`;
 
   if (ctx.numTries > 0 && question.required) {
     promptMessage = requiredMessage(question) + promptMessage;
@@ -46,32 +47,44 @@ export interface InquirererOptions {
   input?: Readable;
   output?: Writable;
   useDefaults?: boolean;
+  globalMaxLines?: number;
 }
 export class Inquirerer {
   private rl: readline.Interface | null;
   private keypress: TerminalKeypress;
   private noTty: boolean;
   private output: Writable;
+  private input: Readable;
   private useDefaults: boolean;
+  private globalMaxLines: number;
 
   constructor(
     options?: InquirererOptions
   ) {
-    const { 
+    const {
       noTty = false,
       input = process.stdin,
       output = process.stdout,
-      useDefaults = false
+      useDefaults = false,
+      globalMaxLines = 10
     } = options ?? {}
 
     this.useDefaults = useDefaults;
     this.noTty = noTty;
     this.output = output;
+    this.input = input;
+    this.globalMaxLines = globalMaxLines;
 
     if (!noTty) {
       this.rl = readline.createInterface({
         input,
-        output
+        // dissallow readline from prompting user, since we'll handle it!
+        output 
+        // : new Writable({
+        //   write(chunk, encoding, callback) {
+        //     callback(); // Do nothing with the data
+        //   }
+        // })
       });
       this.keypress = new TerminalKeypress(noTty, input);
     } else {
@@ -83,13 +96,26 @@ export class Inquirerer {
     // same as console.clear()
     this.output.write('\x1Bc'); // This is the escape sequence to clear the terminal screen.
   }
-  
+
   write(message: string) {
     this.output.write(message);
   }
-  
+
   log(message: string) {
     this.output.write(message + '\n');
+  }
+
+  getInput(input: string) {
+    return `${chalk.white.bold('$')} ${input}`;
+  }
+
+  getPrompt(question: Question, ctx: PromptContext, input: string) {
+    const promptMessage = generatePromptMessage(question, ctx);
+    return promptMessage + this.getInput(input);
+  }
+  displayPrompt(question: Question, ctx: PromptContext, input: string) {
+    const prompt = this.getPrompt(question, ctx, input);
+    this.log(prompt);
   }
 
   public async prompt<T extends object>(params: T, questions: Question[], usageText?: string): Promise<T> {
@@ -162,9 +188,8 @@ export class Inquirerer {
     if (this.noTty || !this.rl) return question.default ?? false;  // Return default if non-interactive
 
     return new Promise<boolean>((resolve) => {
-      // Construct the prompt with the default option indicated
-      const promptMessage = generatePromptMessage(question, ctx);
-      this.rl.question(promptMessage, (answer) => {
+      this.clearScreen();
+      this.rl.question(this.getPrompt(question, ctx, ''), (answer) => {
         const userInput = answer.trim().toLowerCase();
 
         if (userInput === '') {
@@ -181,16 +206,14 @@ export class Inquirerer {
   async text(question: TextQuestion, ctx: PromptContext): Promise<string | null> {
     if (this.noTty || !this.rl) return question.default ?? null;  // Return default if non-interactive
 
-    let userInput = '';
+    let input = '';
 
     return new Promise<string | null>((resolve) => {
-      this.clearScreen(); // Clear the console at the beginning of each input session
-      const promptMessage = generatePromptMessage(question, ctx);
-
-      this.rl.question(promptMessage, (answer) => {  // Include the prompt directly in the question method
-        userInput = answer;
-        if (userInput.trim() !== '') {
-          resolve(userInput);  // Return input if not empty
+      this.clearScreen();
+      this.rl.question(this.getPrompt(question, ctx, input), (answer) => {  // Include the prompt directly in the question method
+        input = answer;
+        if (input.trim() !== '') {
+          resolve(input);  // Return input if not empty
         } else {
           resolve(null);  // Return null if empty and not required
         }
@@ -198,35 +221,38 @@ export class Inquirerer {
     });
   }
 
-  async checkbox(question: CheckboxQuestion, ctx: PromptContext): Promise<Value[]> {
+  async checkbox(question: CheckboxQuestion, ctx: PromptContext): Promise<OptionValue[]> {
     if (this.noTty || !this.rl) return question.default ?? [];  // Return default if non-interactive
 
     this.keypress.resume();
-    const options = question.options || [];
+    const options = (question.options ?? []).map(option=>this.getOptionValue(option))
     let input = ''; // Search input
     let filteredOptions = options;
     let selectedIndex = 0;
     let startIndex = 0; // Start index for visible options
-    const maxLines = question.maxDisplayLines || options.length; // Use provided max or total options
+    const maxLines = this.getMaxLines(question, options.length) // Use provided max or total options
     const selections: boolean[] = new Array(options.length).fill(false);
 
     const updateFilteredOptions = (): void => {
-      filteredOptions = options.filter(option => option.toLowerCase().includes(input.toLowerCase()));
+      filteredOptions = options.filter(option => option.name.toLowerCase().includes(input.toLowerCase()));
     };
 
     const display = (): void => {
       this.clearScreen();
-      const promptMessage = generatePromptMessage(question, ctx);
-      this.write(promptMessage);
-      this.log(`${input}`);
+      this.displayPrompt(question, ctx, input);
       const endIndex = Math.min(startIndex + maxLines, filteredOptions.length);
       for (let i = startIndex; i < endIndex; i++) {
         const option = filteredOptions[i];
         const isSelected = selectedIndex === i;
         const marker = isSelected ? '>' : ' ';
-        const isChecked = selections[options.indexOf(option)] ? '◉' : '○'; // Use the original index in options
-        const line = `${marker} ${isChecked} ${option}`;
-        this.log(isSelected ? chalk.blue(line) : line);
+        const index = options.map(o=>o.name).indexOf(option.name);
+        if (index >= 0) {
+          const isChecked = selections[index] ? '◉' : '○'; // Use the original index in options
+          const line = `${marker} ${isChecked} ${option.name}`;
+          this.log(isSelected ? chalk.blue(line) : line);
+        } else {
+          this.log('No options'); // sometimes user searches and there are no options...
+        }
       }
     };
 
@@ -282,7 +308,7 @@ export class Inquirerer {
           // Return all options with their selected status
           options.forEach((option, index) => {
             result.push({
-              name: option,
+              name: option.name,
               value: selections[index]
             });
           });
@@ -291,7 +317,7 @@ export class Inquirerer {
           options.forEach((option, index) => {
             if (selections[index]) {
               result.push({
-                name: option,
+                name: option.name,
                 value: selections[index]
               });
             }
@@ -301,29 +327,40 @@ export class Inquirerer {
       });
     });
   }
-  async autocomplete(question: AutocompleteQuestion, ctx: PromptContext): Promise<string> {
+
+  private getOptionValue(option: string | OptionValue): OptionValue {
+    if (typeof option === 'string') {
+      return { name: option, value: option };
+    } else {
+      return { name: option.name, value: option.value };
+    }
+  }
+
+  async autocomplete(question: AutocompleteQuestion, ctx: PromptContext): Promise<any> {
     if (this.noTty || !this.rl) return question.default ?? false;  // Return default if non-interactive
 
     this.keypress.resume();
-    const options = question.options || [];
+    const options = (question.options ?? []).map(option => this.getOptionValue(option));
+
     let input = '';
     let filteredOptions = options;
     let selectedIndex = 0;
     let startIndex = 0;  // Start index for visible options
-    const maxLines = question.maxDisplayLines || options.length;  // Use provided max or total options
+    const maxLines = this.getMaxLines(question, options.length) // Use provided max or total options
 
     const display = (): void => {
       this.clearScreen();
-      const promptMessage = generatePromptMessage(question, ctx);
-      this.log(promptMessage);
+      this.displayPrompt(question, ctx, input);
       // Determine the range of options to display
       const endIndex = Math.min(startIndex + maxLines, filteredOptions.length);
       for (let i = startIndex; i < endIndex; i++) {
         const option = filteredOptions[i];
-        if (i === selectedIndex) {
-          this.log(chalk.blue('> ' + option)); // Highlight the selected option with chalk
+        if (!option) {
+          this.log('No options'); // sometimes user searches and there are no options...
+        } else if (i === selectedIndex) {
+          this.log(chalk.blue('> ' + option.name)); // Highlight the selected option with chalk
         } else {
-          this.log('  ' + option);
+          this.log('  ' + option.name);
         }
       }
     };
@@ -379,20 +416,39 @@ export class Inquirerer {
       display();
     });
 
-    return new Promise<string>(resolve => {
+    return new Promise<OptionValue>(resolve => {
       this.keypress.on(KEY_CODES.ENTER, () => {
         this.keypress.pause();
-        resolve(filteredOptions[selectedIndex] || input);
+        resolve(filteredOptions[selectedIndex]?.value || input );
       });
     });
   }
 
-  filterOptions(options: string[], input: string): string[] {
+  filterOptions(options: OptionValue[], input: string): OptionValue[] {
     return options
-      .filter(option => option.toLowerCase().startsWith(input.toLowerCase()))
-      .sort();
+      .filter(option => option.name.toLowerCase().startsWith(input.toLowerCase()))
+      .sort((a, b) => {
+        if (a.name < b.name) {
+          return -1; // b first
+        }
+        if (a.name > b.name) {
+          return 1; // a is first
+        }
+        return 0; // equal
+      });
   }
 
+  getMaxLines(question: { maxDisplayLines?: number }, defaultLength: number): number {
+    if (question.maxDisplayLines) {
+      return question.maxDisplayLines;
+    }
+
+    // if (!this.noTty && (this.output as any).isTTY) {
+    //   const rows = Math.round(((this.output as any).rows ?? 0) / 7);
+    //   return Math.max(rows, defaultLength);
+    // }
+    return Math.min(this.globalMaxLines, defaultLength);
+  }
 
   // Method to cleanly close the readline interface
   public close() {
