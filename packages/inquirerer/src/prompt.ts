@@ -643,6 +643,7 @@ export class Inquirerer {
 
     // Fuzzy matching: Check if all characters of the input can be found in the option name in order
     const fuzzyMatch = (option: string, input: string) => {
+      if (!input || !input.trim().length) return true;
       const length = input.length;
       let position = 0; // Position in the input string
 
