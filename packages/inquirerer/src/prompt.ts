@@ -112,7 +112,7 @@ export interface InquirererOptions {
   useDefaults?: boolean;
   globalMaxLines?: number;
   mutateArgs?: boolean;
-  
+
 }
 export class Inquirerer {
   private rl: readline.Interface | null;
@@ -311,7 +311,7 @@ export class Inquirerer {
     return answer;
   }
 
-  public exit () {
+  public exit() {
     this.clearScreen();
     this.close();
   }
@@ -342,6 +342,7 @@ export class Inquirerer {
       }
 
       // If running in a non-interactive mode and any required argument is missing, handle the error.
+      this.clearScreen();
       if (options?.usageText) {
         this.log(options.usageText);
       } else if (options?.manPageInfo) {
@@ -349,7 +350,7 @@ export class Inquirerer {
       } else {
         this.log('Missing required arguments. Please provide all required parameters.');
       }
-      this.exit();
+      throw new Error('Missing required arguments. Please provide all required parameters.');
 
     }
 
@@ -367,6 +368,11 @@ export class Inquirerer {
         obj[question.name] = await this.handleQuestionType(question, ctx);
 
         if (!this.isValid(question, obj, ctx)) {
+          if (this.noTty) {
+            // If you're not valid and here with noTty, you're out!
+            this.clearScreen(); // clear before leaving, not calling exit() since it may be a bad pattern to continue, devs should try/catch
+            throw new Error('Missing required arguments. Please provide all required parameters.');
+          }
           continue;
         }
         // If input passes validation and is not empty, or not required, move to the next question
@@ -390,7 +396,7 @@ export class Inquirerer {
         return this.text(question as TextQuestion, ctx);
     }
   }
-  
+
   public async confirm(question: ConfirmQuestion, ctx: PromptContext): Promise<boolean> {
     if (this.noTty || !this.rl) return question.default ?? false;  // Return default if non-interactive
 
@@ -435,6 +441,11 @@ export class Inquirerer {
 
   public async checkbox(question: CheckboxQuestion, ctx: PromptContext): Promise<OptionValue[]> {
     if (this.noTty || !this.rl) return question.default ?? [];  // Return default if non-interactive
+
+    if (!question.options.length) {
+      // no arguments don't make sense
+      throw new Error('checkbox requires options');
+    }
 
     this.keypress.resume();
     const options = this.sanitizeOptions(question);
@@ -546,6 +557,10 @@ export class Inquirerer {
         return question.default;
       }
       return;
+    }
+
+    if (!question.options.length) {
+      throw new Error('autocomplete requires options');
     }
 
     this.keypress.resume();
