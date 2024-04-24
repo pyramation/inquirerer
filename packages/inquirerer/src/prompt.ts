@@ -320,33 +320,24 @@ export class Inquirerer {
     const shouldMutate = options?.mutateArgs !== undefined ? options.mutateArgs : this.mutateArgs;
     let obj: any = shouldMutate ? argv : { ...argv };
 
+    // first loop through the question, and set any overrides in case other questions use objs for validation
+    this.applyOverrides(argv, obj, questions);
 
-    // Assuming questions is an array of Question objects and argv is the parsed command line arguments object.
-    if (this.noTty && questions.some(question => question.required && this.isEmptyAnswer((argv as any)[question.name]))) {
+    // Check for required arguments when no terminal is available (non-interactive mode)
+    if (this.noTty && this.hasMissingRequiredArgs(questions, argv)) {
 
-      for (let index = 0; index < questions.length; index++) {
-        const question = questions[index];
-        // Apply default value if applicable
-        if ('default' in question) {
-          obj[question.name] = question.default;
-        }
+      // Apply default values for all questions
+      this.applyDefaultValues(questions, obj);
+
+      // Recheck for missing required arguments after applying defaults
+      // NOT so sure this would ever happen, but possible if developer did something wrong
+      if (!this.hasMissingRequiredArgs(questions, argv)) {
+        return obj as T;  // Return the updated object if no required arguments are missing
       }
 
-      if (!questions.some(question => question.required && this.isEmptyAnswer((argv as any)[question.name]))) {
-        return obj as T;
-      }
-
-      // If running in a non-interactive mode and any required argument is missing, handle the error.
-      this.clearScreen();
-      if (options?.usageText) {
-        this.log(options.usageText);
-      } else if (options?.manPageInfo) {
-        this.log(this.generateManPage(options.manPageInfo))
-      } else {
-        this.log('Missing required arguments. Please provide all required parameters.');
-      }
+      // Handle error for missing required arguments
+      this.handleMissingArgsError(options);
       throw new Error('Missing required arguments. Please provide all required parameters.');
-
     }
 
     for (let index = 0; index < questions.length; index++) {
@@ -355,11 +346,13 @@ export class Inquirerer {
 
       // obj is already either argv itself, or a clone, but let's check if it has the property
       if (question.name in obj) {
+        this.handleOverrides(argv, obj, question);
         ctx.nextQuestion();
         continue;
       }
-      
+
       // Apply default value if applicable
+      // this is if useDefault is set, rare! not typical defaults which happen AFTER
       if ('default' in question && (this.useDefaults || question.useDefault)) {
         obj[question.name] = question.default;
         continue;  // Skip to the next question since the default is applied
@@ -382,6 +375,64 @@ export class Inquirerer {
     }
 
     return obj as T;
+  }
+
+  private handleMissingArgsError(options?: { usageText?: string; manPageInfo?: any }): void {
+    this.clearScreen();
+    if (options?.usageText) {
+      this.log(options.usageText);
+    } else if (options?.manPageInfo) {
+      this.log(this.generateManPage(options.manPageInfo));
+    } else {
+      this.log('Missing required arguments. Please provide all required parameters.');
+    }
+  }
+
+  private hasMissingRequiredArgs(questions: Question[], argv: any): boolean {
+    return questions.some(question => question.required && this.isEmptyAnswer(argv[question.name]));
+  }
+
+  private applyDefaultValues(questions: Question[], obj: any): void {
+    questions.forEach(question => {
+      if ('default' in question) {
+        obj[question.name] = question.default;  // Set default value if specified
+      }
+    });
+  }
+
+  private applyOverrides(argv: any, obj: any, questions: Question[]): void {
+    questions.forEach(question => {
+      if (question.name in argv) {
+        this.handleOverrides(argv, obj, question);
+      }
+    });
+  }
+
+  private handleOverrides(argv: any, obj: any, question: Question): void {
+    switch (question.type) {
+      case 'text':
+      case 'confirm':
+        // do nothing, already set!
+        break;
+      case 'checkbox':
+      case 'autocomplete':
+        // get the value from options :)
+        this.handleOverridesWithOptions(argv, obj, question);
+        break;
+      default:
+        return;
+    }
+  }
+
+  private handleOverridesWithOptions(argv: any, obj: any, question: CheckboxQuestion | AutocompleteQuestion): void {
+    // obj is already either argv itself, or a clone, but let's check if it has the property
+    if (Object.prototype.hasOwnProperty.call(argv, question.name) && typeof argv[question.name] === 'string') {
+      const options = this.sanitizeOptions(question);
+      const found = options.find(option => option.name === argv[question.name]);
+      if (typeof found !== 'undefined') {
+        obj[question.name] = found.value;
+      }
+    }
   }
 
   private async handleQuestionType(question: Question, ctx: PromptContext): Promise<any> {
@@ -712,7 +763,7 @@ export class Inquirerer {
 
   // Method to cleanly close the readline interface
   // NOTE: use exit() to close!
-  private close() {
+  public close() {
     if (this.rl) {
       this.rl.close();
       this.keypress.destroy();
