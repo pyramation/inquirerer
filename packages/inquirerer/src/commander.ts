@@ -67,6 +67,7 @@ export class CLI {
       process.exit(0);
     }
 
+
     const args = await this.commandHandler(this.argv, this.prompter, this.options);
     this.prompter.exit();
     return args;

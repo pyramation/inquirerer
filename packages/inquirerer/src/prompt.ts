@@ -146,13 +146,7 @@ export class Inquirerer {
     if (!noTty) {
       this.rl = readline.createInterface({
         input,
-        // dissallow readline from prompting user, since we'll handle it!
         output
-        // : new Writable({
-        //   write(chunk, encoding, callback) {
-        //     callback(); // Do nothing with the data
-        //   }
-        // })
       });
       this.keypress = new TerminalKeypress(noTty, input);
     } else {
@@ -359,6 +353,12 @@ export class Inquirerer {
       const question = questions[index];
       const ctx: PromptContext = new PromptContext();
 
+      // obj is already either argv itself, or a clone, but let's check if it has the property
+      if (question.name in obj) {
+        ctx.nextQuestion();
+        continue;
+      }
+      
       // Apply default value if applicable
       if ('default' in question && (this.useDefaults || question.useDefault)) {
         obj[question.name] = question.default;
