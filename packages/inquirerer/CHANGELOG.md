@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.7.0](https://github.com/pyramation/inquirerer/compare/inquirerer@1.6.1...inquirerer@1.7.0) (2024-04-24)
+
+**Note:** Version bump only for package inquirerer
+
+
+
+
+
 ## [1.6.1](https://github.com/pyramation/inquirerer/compare/inquirerer@1.6.0...inquirerer@1.6.1) (2024-04-22)
 
 **Note:** Version bump only for package inquirerer
