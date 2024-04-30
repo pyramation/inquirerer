@@ -37,9 +37,11 @@ export class TerminalKeypress {
     this.noTty = noTty;
     this.input = input;
     this.proc = proc;
-    
+
     if (this.isTTY()) {
-      (this.input as any).setRawMode(true);
+      if (typeof (this.input as any).setRawMode === 'function') {
+        (this.input as any).setRawMode(true);
+      }
       this.input.resume();
       this.input.setEncoding('utf8');
     }
@@ -86,7 +88,9 @@ export class TerminalKeypress {
   }
 
   destroy(): void {
-    (this.input as any).setRawMode(false);
+    if (typeof (this.input as any).setRawMode === 'function') {
+      (this.input as any).setRawMode(false);
+    }
     this.input.pause();
     this.input.removeAllListeners('data');
   }
