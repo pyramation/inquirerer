@@ -51,5 +51,10 @@ export interface BaseQuestion {
     type: 'text';
     default?: string;
   }
+
+  export interface NumberQuestion extends BaseQuestion {
+    type: 'number';
+    default?: number;
+  }
   
-  export type Question = ConfirmQuestion | AutocompleteQuestion | CheckboxQuestion | TextQuestion;
+  export type Question = ConfirmQuestion | AutocompleteQuestion | CheckboxQuestion | TextQuestion | NumberQuestion;

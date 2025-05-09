@@ -3,7 +3,7 @@ import readline from 'readline';
 import { Readable, Writable } from 'stream';
 
 import { KEY_CODES, TerminalKeypress } from './keypress';
-import { AutocompleteQuestion, CheckboxQuestion, ConfirmQuestion, OptionValue, Question, TextQuestion, Validation, Value } from './question';
+import { AutocompleteQuestion, CheckboxQuestion, ConfirmQuestion, NumberQuestion, OptionValue, Question, TextQuestion, Validation, Value } from './question';
 
 export interface ManPageInfo {
   commandName: string;
@@ -443,6 +443,8 @@ export class Inquirerer {
         return this.checkbox(question as CheckboxQuestion, ctx);
       case 'autocomplete':
         return this.autocomplete(question as AutocompleteQuestion, ctx);
+      case 'number':
+        return this.number(question as NumberQuestion, ctx);
       case 'text':
       default:
         return this.text(question as TextQuestion, ctx);
@@ -486,6 +488,34 @@ export class Inquirerer {
           resolve(input);  // Return input if not empty
         } else {
           resolve(null);  // Return null if empty and not required
+        }
+      });
+    });
+  }
+
+  public async number(question: NumberQuestion, ctx: PromptContext): Promise<number | null> {
+    if (this.noTty || !this.rl) {
+      if ('default' in question) {
+        return question.default;
+      }
+      return;
+    }
+  
+    let input = '';
+  
+    return new Promise<number | null>((resolve) => {
+      this.clearScreen();
+      this.rl.question(this.getPrompt(question, ctx, input), (answer) => {
+        input = answer.trim();
+        if (input !== '') {
+          const num = Number(input);
+          if (!isNaN(num)) {
+            resolve(num);
+          } else {
+            resolve(null);
+          }
+        } else {
+          resolve(null);
         }
       });
     });
