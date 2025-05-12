@@ -31,14 +31,14 @@ const main = async () => {
   const massive = await prompter.prompt({
   },  [
     {
-      name: 'num',
-      type: 'number',
-      required: true
-    },
-    {
       name: 'num2',
       type: 'number',
       default: 2
+    },
+    {
+      name: 'text2',
+      type: 'text',
+      default: 'tex'
     }
   ])
   console.log(JSON.stringify(massive, null, 2))

@@ -353,6 +353,7 @@ export class Inquirerer {
 
       // Apply default value if applicable
       // this is if useDefault is set, rare! not typical defaults which happen AFTER
+      // this is mostly to avoid a prompt for "hidden" options
       if ('default' in question && (this.useDefaults || question.useDefault)) {
         obj[question.name] = question.default;
         continue;  // Skip to the next question since the default is applied
@@ -446,6 +447,7 @@ export class Inquirerer {
       case 'number':
         return this.number(question as NumberQuestion, ctx);
       case 'text':
+        return this.text(question as TextQuestion, ctx);
       default:
         return this.text(question as TextQuestion, ctx);
     }
@@ -486,6 +488,8 @@ export class Inquirerer {
         input = answer;
         if (input.trim() !== '') {
           resolve(input);  // Return input if not empty
+        } else if ('default' in question) {
+          resolve(question.default);  // Use default if input is empty
         } else {
           resolve(null);  // Return null if empty and not required
         }
@@ -512,10 +516,12 @@ export class Inquirerer {
           if (!isNaN(num)) {
             resolve(num);
           } else {
-            resolve(null);
+            resolve(null); // Let validation handle bad input
           }
+        } else if ('default' in question) {
+          resolve(question.default); // Use default if input is empty
         } else {
-          resolve(null);
+          resolve(null); // Empty and no default
         }
       });
     });
