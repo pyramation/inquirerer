@@ -78,43 +78,136 @@ class PromptContext {
 }
 
 
-function generatePromptMessage(question: Question, ctx: PromptContext): string {
-  let promptMessage: string = '';
-  if (question.message) {
-    promptMessage = chalk.whiteBright(question.message) + '\n';
+function generatePromptMessageSuccinct(question: Question, ctx: PromptContext): string {
+  const {
+    message,
+    name,
+    type,
+    default: def,
+    options = []
+  } = question as Question & { options?: OptionValue[] };
+
+  const lines: string[] = [];
+
+  // 1. Main prompt label
+  lines.push(chalk.whiteBright.bold(message || `${name}?`));
+
+  // 2. Validation message if applicable
+  const validation = validationMessage(question, ctx);
+  if (validation) {
+    lines.push(validation); // already styled red
   }
-  promptMessage += `${chalk.white('[')}${chalk.green('--' + question.name)}${chalk.white(']:')}\n`;
 
-  promptMessage = validationMessage(question, ctx) + promptMessage;
+  // 3. Append default inline (only if present)
+  let inline = '';
 
-  switch (question.type) {
+  switch (type) {
     case 'confirm':
-      promptMessage += `(y/n)${question.default !== undefined ? ` [${question.default ? 'y' : 'n'}]` : ''}`;
+      inline = '(y/n)';
+      if (def !== undefined) {
+        inline += ` ${chalk.yellow(`[${def ? 'y' : 'n'}]`)}`;
+      }
       break;
+
     case 'text':
-      if (question.default) {
-        promptMessage += ` [${question.default}]`;
-      }
-      break;
     case 'number':
-      if (question.default) {
-        promptMessage += ` [${question.default}]`;
+      if (def !== undefined) {
+        inline += `${chalk.yellow(`[${def}]`)}`;
       }
       break;
+
     case 'autocomplete':
     case 'list':
     case 'checkbox':
-      // For these types, you might want to show the default selected options if any
-      if (question.options && question.default) {
-        const defaultOptions = Array.isArray(question.default) ? question.default : [question.default];
-        const defaultText = defaultOptions.join(', ');
-        promptMessage += ` [${defaultText}]`;
+      if (def !== undefined) {
+        const defaults = Array.isArray(def) ? def : [def];
+        const rendered = defaults.map(d => chalk.yellow(d)).join(chalk.gray(', '));
+        inline += `${chalk.yellow(`[${rendered}]`)}`;
       }
       break;
   }
 
-  return promptMessage;
+  if (inline) {
+    lines[lines.length - 1] += ' ' + inline; // append to prompt line
+  }
+
+  // 4. Final input line
+  lines.push('> ');
+
+  return lines.join('\n');
 }
+
+function generatePromptMessage(question: Question, ctx: PromptContext): string {
+  const {
+    message,
+    name,
+    type,
+    default: def,
+    options = [],
+    description
+  } = question as Question & { options?: OptionValue[]; description?: string };
+
+  const lines: string[] = [];
+
+  // 1. Title Message
+  lines.push(chalk.whiteBright.bold(message || `${name}?`));
+
+  // 2. Optional description below title
+  if (description) {
+    lines.push(chalk.dim(description));
+  }
+
+  // 3. Validation warning (if failed before)
+  const validation = validationMessage(question, ctx);
+  if (validation) {
+    lines.push(validation); // already red-colored
+  }
+
+  // 4. Metadata (name/type)
+  lines.push(
+    `${chalk.dim('Argument')} ${chalk.green(`--${name}`)} ${chalk.dim('type')} ${chalk.cyan(`[${type}]`)}`
+  );
+
+  // 5. Default value or guidance
+  let guidance = '';
+
+  switch (type) {
+    case 'confirm':
+      guidance = '(y/n)';
+      if (def !== undefined) {
+        guidance += ` ${chalk.yellow(`[default: ${def ? 'y' : 'n'}]`)}`;
+      }
+      break;
+
+    case 'text':
+    case 'number':
+      if (def !== undefined) {
+        guidance = chalk.yellow(`[default: ${def}]`);
+      }
+      break;
+
+    case 'autocomplete':
+    case 'list':
+    case 'checkbox':
+      if (def !== undefined) {
+        const defaults = Array.isArray(def) ? def : [def];
+        const rendered = defaults.map(d => chalk.yellow(d)).join(chalk.gray(', '));
+        guidance += `${chalk.yellow(`[default: ${rendered}]`)}`;
+      }
+      break;
+  }
+
+  if (guidance) {
+    lines.push(guidance);
+  }
+
+  // 6. Final input prompt
+  lines.push(chalk.white('> ') + chalk.dim('Your input:'));
+
+  return lines.join('\n') + '\n';
+}
+
+
 
 export interface InquirererOptions {
   noTty?: boolean;
