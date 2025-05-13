@@ -28,8 +28,7 @@ const prompter = new Inquirerer({
 
 const main = async () => {
 
-  const massive = await prompter.prompt({
-  },  [
+  const massive = await prompter.prompt(argv,  [
     // {
     //   name: 'num2',
     //   type: 'number',

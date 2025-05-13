@@ -4,6 +4,11 @@ import { Readable, Writable } from 'stream';
 
 import { KEY_CODES, TerminalKeypress } from './keypress';
 import { AutocompleteQuestion, CheckboxQuestion, ConfirmQuestion, ListQuestion, NumberQuestion, OptionValue, Question, TextQuestion, Validation, Value } from './question';
+// import { writeFileSync } from 'fs';
+
+// const debuglog = (obj: any) => {
+//   writeFileSync('tailme', JSON.stringify(obj, null, 2));
+// }
 
 export interface ManPageInfo {
   commandName: string;
@@ -416,6 +421,10 @@ export class Inquirerer {
   }
 
   private handleOverrides(argv: any, obj: any, question: Question): void {
+    if (!Object.prototype.hasOwnProperty.call(argv, question.name)) {
+      return;
+    }
+
     switch (question.type) {
       case 'text':
       case 'number':
@@ -423,6 +432,8 @@ export class Inquirerer {
         // do nothing, already set!
         break;
       case 'checkbox':
+        this.handleOverridesForCheckboxOptions(argv, obj, question);
+        break;
       case 'autocomplete':
       case 'list':
         // get the value from options :)
@@ -433,11 +444,52 @@ export class Inquirerer {
     }
   }
 
-  private handleOverridesWithOptions(argv: any, obj: any, question: CheckboxQuestion | AutocompleteQuestion | ListQuestion): void {
-    // obj is already either argv itself, or a clone, but let's check if it has the property
-    if (Object.prototype.hasOwnProperty.call(argv, question.name) && typeof argv[question.name] === 'string') {
+  private handleOverridesForCheckboxOptions(
+    argv: any,
+    obj: any,
+    question: CheckboxQuestion
+  ): void {
+
+    const options = this.sanitizeOptions(question);
+    const input = argv[question.name];
+
+    if (typeof input === 'string') {
+
+      const found = options.filter(
+        opt => opt.name === input || String(opt.value) === input
+      );
+
+      if (found.length) {
+        obj[question.name] = found
+      }
+    } else if (Array.isArray(input)) {
+
+      const found = options.filter(
+        opt => input.includes(opt.name) || input.includes(String(opt.value))
+      );
+
+      if (found.length) {
+        obj[question.name] = found
+      }
+    }
+  }
+
+
+  private handleOverridesWithOptions(
+    argv: any,
+    obj: any,
+    question: AutocompleteQuestion | ListQuestion | CheckboxQuestion
+  ): void {
+    if (
+      typeof argv[question.name] === 'string'
+    ) {
       const options = this.sanitizeOptions(question);
-      const found = options.find(option => option.name === argv[question.name]);
+      const input = argv[question.name];
+
+      const found = options.find(
+        opt => opt.name === input || String(opt.value) === input
+      );
+
       if (typeof found !== 'undefined') {
         obj[question.name] = found.value;
       }
@@ -829,7 +881,7 @@ export class Inquirerer {
     // // it will start to display the closure from the
     // // @ts-ignore
     // // this.keypress.input.removeAllListeners('data');
-    
+
     // // Handling BACKSPACE key
     // this.keypress.off(KEY_CODES.BACKSPACE);
 
