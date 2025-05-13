@@ -968,27 +968,6 @@ export class Inquirerer {
 
     display();
 
-
-    // // Handling these because otherwise they're bound by OTHER methods! memory leak.
-    // // e.g. you have checkbox before, then you have a list.... if you don't also do keys and backspace
-    // // it will start to display the closure from the
-    // // @ts-ignore
-    // // this.keypress.input.removeAllListeners('data');
-
-    // // Handling BACKSPACE key
-    // this.keypress.off(KEY_CODES.BACKSPACE);
-
-    // // Register alphanumeric and space keypresses to accumulate input
-    // 'abcdefghijklmnopqrstuvwxyz0123456789 '.split('').forEach(char => {
-    //   this.keypress.off(char);
-    // });
-
-    // this.keypress.on(KEY_CODES.SPACE, () => {
-    //   display();
-    // });
-
-
-
     // Navigation
     this.keypress.on(KEY_CODES.UP_ARROW, () => {
       selectedIndex = selectedIndex - 1 >= 0 ? selectedIndex - 1 : options.length - 1;
