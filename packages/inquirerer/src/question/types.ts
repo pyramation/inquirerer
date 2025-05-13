@@ -5,6 +5,7 @@ export interface Value {
 export interface OptionValue {
   name: string;
   value: any;
+  selected?: boolean;
 }
 
 export interface Validation {
@@ -38,6 +39,14 @@ export interface BaseQuestion {
     returnFullResults?: boolean;
     allowCustomOptions?: boolean;
   }
+
+  export interface ListQuestion extends BaseQuestion {
+    type: 'list';
+    options: (string|OptionValue)[];
+    maxDisplayLines?: number;
+    returnFullResults?: boolean;
+    allowCustomOptions?: boolean;
+  }
   
   export interface CheckboxQuestion extends BaseQuestion {
     type: 'checkbox';
@@ -57,4 +66,4 @@ export interface BaseQuestion {
     default?: number;
   }
   
-  export type Question = ConfirmQuestion | AutocompleteQuestion | CheckboxQuestion | TextQuestion | NumberQuestion;
+  export type Question = ConfirmQuestion | ListQuestion | AutocompleteQuestion | CheckboxQuestion | TextQuestion | NumberQuestion;

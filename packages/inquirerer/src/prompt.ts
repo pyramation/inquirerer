@@ -3,7 +3,7 @@ import readline from 'readline';
 import { Readable, Writable } from 'stream';
 
 import { KEY_CODES, TerminalKeypress } from './keypress';
-import { AutocompleteQuestion, CheckboxQuestion, ConfirmQuestion, NumberQuestion, OptionValue, Question, TextQuestion, Validation, Value } from './question';
+import { AutocompleteQuestion, CheckboxQuestion, ConfirmQuestion, ListQuestion, NumberQuestion, OptionValue, Question, TextQuestion, Validation, Value } from './question';
 
 export interface ManPageInfo {
   commandName: string;
@@ -91,7 +91,13 @@ function generatePromptMessage(question: Question, ctx: PromptContext): string {
         promptMessage += ` [${question.default}]`;
       }
       break;
+    case 'number':
+      if (question.default) {
+        promptMessage += ` [${question.default}]`;
+      }
+      break;
     case 'autocomplete':
+    case 'list':
     case 'checkbox':
       // For these types, you might want to show the default selected options if any
       if (question.options && question.default) {
@@ -412,11 +418,13 @@ export class Inquirerer {
   private handleOverrides(argv: any, obj: any, question: Question): void {
     switch (question.type) {
       case 'text':
+      case 'number':
       case 'confirm':
         // do nothing, already set!
         break;
       case 'checkbox':
       case 'autocomplete':
+      case 'list':
         // get the value from options :)
         this.handleOverridesWithOptions(argv, obj, question);
         break;
@@ -425,7 +433,7 @@ export class Inquirerer {
     }
   }
 
-  private handleOverridesWithOptions(argv: any, obj: any, question: CheckboxQuestion | AutocompleteQuestion): void {
+  private handleOverridesWithOptions(argv: any, obj: any, question: CheckboxQuestion | AutocompleteQuestion | ListQuestion): void {
     // obj is already either argv itself, or a clone, but let's check if it has the property
     if (Object.prototype.hasOwnProperty.call(argv, question.name) && typeof argv[question.name] === 'string') {
       const options = this.sanitizeOptions(question);
@@ -442,6 +450,7 @@ export class Inquirerer {
         return this.confirm(question as ConfirmQuestion, ctx);
       case 'checkbox':
         return this.checkbox(question as CheckboxQuestion, ctx);
+      case 'list':
       case 'autocomplete':
         return this.autocomplete(question as AutocompleteQuestion, ctx);
       case 'number':
@@ -539,7 +548,8 @@ export class Inquirerer {
       if (question.returnFullResults) {
         return options.map(opt => ({
           name: opt.name,
-          value: defaults.includes(opt.name)
+          value: opt.value,
+          selected: defaults.includes(opt.name)
         }));
       }
 
@@ -548,7 +558,8 @@ export class Inquirerer {
         .filter(opt => defaults.includes(opt.name) || defaults.includes(opt.value))
         .map(opt => ({
           name: opt.name,
-          value: opt.value
+          value: opt.value,
+          selected: true
         }));
 
     }
@@ -644,16 +655,17 @@ export class Inquirerer {
       display();
     });
 
-    return new Promise<Value[]>(resolve => {
+    return new Promise<OptionValue[]>(resolve => {
       this.keypress.on(KEY_CODES.ENTER, () => {
         this.keypress.pause();
-        const result: Value[] = [];
+        const result: OptionValue[] = [];
         if (question.returnFullResults) {
           // Return all options with their selected status
           options.forEach((option, index) => {
             result.push({
               name: option.name,
-              value: selections[index]
+              value: option.value,
+              selected: selections[index]
             });
           });
         } else {
@@ -662,7 +674,8 @@ export class Inquirerer {
             if (selections[index]) {
               result.push({
                 name: option.name,
-                value: selections[index]
+                value: option.value,
+                selected: selections[index]
               });
             }
           });
@@ -779,7 +792,7 @@ export class Inquirerer {
     }
   }
 
-  private sanitizeOptions(question: AutocompleteQuestion | CheckboxQuestion): OptionValue[] {
+  private sanitizeOptions(question: AutocompleteQuestion | CheckboxQuestion | ListQuestion): OptionValue[] {
     const options = (question.options ?? []).map(option => this.getOptionValue(option));
     return options.filter(Boolean);
   }

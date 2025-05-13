@@ -5,11 +5,13 @@ exports[`Inquirerer checkbox 1`] = `
   "checkbox": [
     {
       "name": "b",
-      "value": true,
+      "selected": true,
+      "value": "b",
     },
     {
       "name": "c",
-      "value": true,
+      "selected": true,
+      "value": "c",
     },
   ],
 }
@@ -20,15 +22,18 @@ exports[`Inquirerer checkbox w/options 1`] = `
   "checkbox": [
     {
       "name": "a",
-      "value": false,
+      "selected": false,
+      "value": "a",
     },
     {
       "name": "b",
-      "value": true,
+      "selected": true,
+      "value": "b",
     },
     {
       "name": "c",
-      "value": true,
+      "selected": true,
+      "value": "c",
     },
   ],
 }
