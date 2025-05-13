@@ -504,9 +504,9 @@ export class Inquirerer {
       }
       return;
     }
-  
+
     let input = '';
-  
+
     return new Promise<number | null>((resolve) => {
       this.clearScreen();
       this.rl.question(this.getPrompt(question, ctx, input), (answer) => {
@@ -528,7 +528,30 @@ export class Inquirerer {
   }
 
   public async checkbox(question: CheckboxQuestion, ctx: PromptContext): Promise<OptionValue[]> {
-    if (this.noTty || !this.rl) return question.default ?? [];  // Return default if non-interactive
+    if (this.noTty || !this.rl) {
+      const options = this.sanitizeOptions(question);
+
+      const defaults = Array.isArray(question.default)
+        ? question.default
+        : [question.default];
+
+      // If returnFullResults is true, return all options with boolean selection
+      if (question.returnFullResults) {
+        return options.map(opt => ({
+          name: opt.name,
+          value: defaults.includes(opt.name)
+        }));
+      }
+
+      // Otherwise, return only selected options
+      return options
+        .filter(opt => defaults.includes(opt.name) || defaults.includes(opt.value))
+        .map(opt => ({
+          name: opt.name,
+          value: opt.value
+        }));
+
+    }
 
     if (!question.options.length) {
       // no arguments don't make sense
@@ -542,7 +565,17 @@ export class Inquirerer {
     let selectedIndex = 0;
     let startIndex = 0; // Start index for visible options
     const maxLines = this.getMaxLines(question, options.length) // Use provided max or total options
-    const selections: boolean[] = new Array(options.length).fill(false);
+    // const selections: boolean[] = new Array(options.length).fill(false);
+
+    const selections: boolean[] = options.map(opt => {
+      if (!question.default) return false;
+
+      const defaults = Array.isArray(question.default)
+        ? question.default
+        : [question.default];
+
+      return defaults.includes(opt.name);
+    });
 
     const updateFilteredOptions = (): void => {
       filteredOptions = this.filterOptions(options, input);

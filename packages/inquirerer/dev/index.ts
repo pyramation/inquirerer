@@ -39,7 +39,20 @@ const main = async () => {
       name: 'text2',
       type: 'text',
       default: 'tex'
-    }
+    },
+    {
+      name: 'checkbox',
+      type: 'checkbox',
+      required: true,
+      default: ['RApple'],
+      options: [
+        { name: 'RApple', value: 'Fruit01' },
+        { name: 'RBanana', value: 'Fruit02' },
+        { name: 'RCherry', value: 'Fruit03' },
+        { name: 'RGrape', value: 'Fruit04' },
+        { name: 'RMango', value: 'Fruit05' }
+      ]
+    },
   ])
   console.log(JSON.stringify(massive, null, 2))
   prompter.close();

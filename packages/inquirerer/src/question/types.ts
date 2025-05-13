@@ -44,7 +44,7 @@ export interface BaseQuestion {
     options: (string|OptionValue)[];
     maxDisplayLines?: number;
     returnFullResults?: boolean;
-    default?: Value[];
+    default?: string[];
   }
   
   export interface TextQuestion extends BaseQuestion {
