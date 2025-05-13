@@ -29,21 +29,24 @@ const prompter = new Inquirerer({
 const main = async () => {
 
   const massive = await prompter.prompt(argv,  [
-    // {
-    //   name: 'num2',
-    //   type: 'number',
-    //   default: 2
-    // },
-    // {
-    //   name: 'text2',
-    //   type: 'text',
-    //   default: 'tex'
-    // },
+    {
+      name: 'num2',
+      type: 'number',
+      message: 'Db enterprises?',
+      description: 'here is a field for whatever.',
+      default: 2
+    },
+    {
+      name: 'text2',
+      type: 'text',
+      description: 'here is a field for whatever.',
+      default: 'tex'
+    },
     {
       name: 'checkbox',
       type: 'checkbox',
       required: true,
-      default: ['RApple'],
+      default: ['RBanana', 'RCherry'],
       options: [
         { name: 'RApple', value: 'Fruit01' },
         { name: 'RBanana', value: 'Fruit02' },
@@ -56,7 +59,7 @@ const main = async () => {
       name: 'list',
       type: 'list',
       required: true,
-      default: ['RApple'],
+      default: ['RCherry'],
       options: [
         { name: 'RApple', value: 'Fruit01' },
         { name: 'RBanana', value: 'Fruit02' },
@@ -69,7 +72,7 @@ const main = async () => {
       name: 'autocomplete',
       type: 'autocomplete',
       required: true,
-      default: ['RApple'],
+      default: ['RGrape'],
       options: [
         { name: 'RApple', value: 'Fruit01' },
         { name: 'RBanana', value: 'Fruit02' },
