@@ -30,19 +30,45 @@ const main = async () => {
 
   const massive = await prompter.prompt({
   },  [
-    {
-      name: 'num2',
-      type: 'number',
-      default: 2
-    },
-    {
-      name: 'text2',
-      type: 'text',
-      default: 'tex'
-    },
+    // {
+    //   name: 'num2',
+    //   type: 'number',
+    //   default: 2
+    // },
+    // {
+    //   name: 'text2',
+    //   type: 'text',
+    //   default: 'tex'
+    // },
     {
       name: 'checkbox',
       type: 'checkbox',
+      required: true,
+      default: ['RApple'],
+      options: [
+        { name: 'RApple', value: 'Fruit01' },
+        { name: 'RBanana', value: 'Fruit02' },
+        { name: 'RCherry', value: 'Fruit03' },
+        { name: 'RGrape', value: 'Fruit04' },
+        { name: 'RMango', value: 'Fruit05' }
+      ]
+    },
+    {
+      name: 'list',
+      type: 'list',
+      required: true,
+      default: ['RApple'],
+      options: [
+        { name: 'RApple', value: 'Fruit01' },
+        { name: 'RBanana', value: 'Fruit02' },
+        { name: 'RCherry', value: 'Fruit03' },
+        { name: 'RGrape', value: 'Fruit04' },
+        { name: 'RMango', value: 'Fruit05' }
+      ]
+    },
+    {
+      name: 'autocomplete',
+      type: 'autocomplete',
       required: true,
       default: ['RApple'],
       options: [

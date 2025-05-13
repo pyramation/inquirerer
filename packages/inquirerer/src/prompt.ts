@@ -445,12 +445,14 @@ export class Inquirerer {
   }
 
   private async handleQuestionType(question: Question, ctx: PromptContext): Promise<any> {
+    this.keypress.clearHandlers();
     switch (question.type) {
       case 'confirm':
         return this.confirm(question as ConfirmQuestion, ctx);
       case 'checkbox':
         return this.checkbox(question as CheckboxQuestion, ctx);
       case 'list':
+        return this.list(question as ListQuestion, ctx);
       case 'autocomplete':
         return this.autocomplete(question as AutocompleteQuestion, ctx);
       case 'number':
@@ -778,6 +780,94 @@ export class Inquirerer {
       this.keypress.on(KEY_CODES.ENTER, () => {
         this.keypress.pause();
         resolve(filteredOptions[selectedIndex]?.value || input);
+      });
+    });
+  }
+
+  public async list(question: ListQuestion, ctx: PromptContext): Promise<any> {
+    if (this.noTty || !this.rl) {
+      if ('default' in question) {
+        return question.default;
+      }
+      return;
+    }
+
+    if (!question.options.length) {
+      throw new Error('list requires options');
+    }
+
+    this.keypress.resume();
+    const options = this.sanitizeOptions(question);
+
+    let input = '';
+    let selectedIndex = 0;
+    let startIndex = 0;  // Start index for visible options
+    const maxLines = this.getMaxLines(question, options.length) // Use provided max or total options
+
+    const display = (): void => {
+      this.clearScreen();
+      this.displayPrompt(question, ctx, input);
+      // Determine the range of options to display
+      const endIndex = Math.min(startIndex + maxLines, options.length);
+      for (let i = startIndex; i < endIndex; i++) {
+        const option = options[i];
+        if (!option) {
+          this.log('No options'); // sometimes user searches and there are no options...
+        } else if (i === selectedIndex) {
+          this.log(chalk.blue('> ' + option.name)); // Highlight the selected option with chalk
+        } else {
+          this.log('  ' + option.name);
+        }
+      }
+    };
+
+    display();
+
+
+    // // Handling these because otherwise they're bound by OTHER methods! memory leak.
+    // // e.g. you have checkbox before, then you have a list.... if you don't also do keys and backspace
+    // // it will start to display the closure from the
+    // // @ts-ignore
+    // // this.keypress.input.removeAllListeners('data');
+    
+    // // Handling BACKSPACE key
+    // this.keypress.off(KEY_CODES.BACKSPACE);
+
+    // // Register alphanumeric and space keypresses to accumulate input
+    // 'abcdefghijklmnopqrstuvwxyz0123456789 '.split('').forEach(char => {
+    //   this.keypress.off(char);
+    // });
+
+    // this.keypress.on(KEY_CODES.SPACE, () => {
+    //   display();
+    // });
+
+
+
+    // Navigation
+    this.keypress.on(KEY_CODES.UP_ARROW, () => {
+      selectedIndex = selectedIndex - 1 >= 0 ? selectedIndex - 1 : options.length - 1;
+      if (selectedIndex < startIndex) {
+        startIndex = selectedIndex;  // Scroll up
+      } else if (selectedIndex === options.length - 1) {
+        startIndex = Math.max(0, options.length - maxLines); // Jump to the bottom of the list
+      }
+      display();
+    });
+    this.keypress.on(KEY_CODES.DOWN_ARROW, () => {
+      selectedIndex = (selectedIndex + 1) % options.length;
+      if (selectedIndex >= startIndex + maxLines) {
+        startIndex = selectedIndex - maxLines + 1;  // Scroll down
+      } else if (selectedIndex === 0) {
+        startIndex = 0;  // Jump to the top of the list
+      }
+      display();
+    });
+
+    return new Promise<OptionValue>(resolve => {
+      this.keypress.on(KEY_CODES.ENTER, () => {
+        this.keypress.pause();
+        resolve(options[selectedIndex]?.value || input);
       });
     });
   }

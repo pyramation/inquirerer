@@ -79,6 +79,10 @@ export class TerminalKeypress {
     }
   }
 
+  clearHandlers(): void {
+    this.listeners = {};
+  }
+
   pause(): void {
     this.active = false;
   }
