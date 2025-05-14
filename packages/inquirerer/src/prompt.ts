@@ -588,23 +588,24 @@ export class Inquirerer {
   private handleOverridesWithOptions(
     argv: any,
     obj: any,
-    question: AutocompleteQuestion | ListQuestion | CheckboxQuestion
+    question: AutocompleteQuestion | ListQuestion
   ): void {
-    if (
-      typeof argv[question.name] === 'string'
-    ) {
-      const options = this.sanitizeOptions(question);
-      const input = argv[question.name];
-
-      const found = options.find(
-        opt => opt.name === input || String(opt.value) === input
-      );
-
-      if (typeof found !== 'undefined') {
-        obj[question.name] = found.value;
-      }
+    const input = argv[question.name];
+    if (typeof input !== 'string') return;
+  
+    const options = this.sanitizeOptions(question);
+  
+    const found = options.find(
+      opt => opt.name === input || String(opt.value) === input
+    );
+  
+    if (found) {
+      obj[question.name] = found.value;
+    } else if (question.allowCustomOptions) {
+      obj[question.name] = input; // Store as-is
     }
   }
+  
 
   private async handleQuestionType(question: Question, ctx: PromptContext): Promise<any> {
     this.keypress?.clearHandlers();

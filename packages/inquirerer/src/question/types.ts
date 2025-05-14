@@ -36,12 +36,14 @@ export interface BaseQuestion {
     type: 'autocomplete';
     options: (string|OptionValue)[];
     maxDisplayLines?: number;
+    allowCustomOptions?: boolean;
   }
 
   export interface ListQuestion extends BaseQuestion {
     type: 'list';
     options: (string|OptionValue)[];
     maxDisplayLines?: number;
+    allowCustomOptions?: boolean;
   }
   
   export interface CheckboxQuestion extends BaseQuestion {
