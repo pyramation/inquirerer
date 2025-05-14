@@ -18,7 +18,8 @@ if (!('tty' in argv)) {
 console.log(argv);
 
 // argv.checkbox = ['RBanana'];
-// argv.checkbox = ['RBanana', 'RCherry'];
+// argv.checkbox = ['Banana'];
+argv.checkbox = ['Banana', 'Cherry', 'Blos'];
 
 if (argv.version) {
   displayVersion();
@@ -50,7 +51,13 @@ const main = async () => {
       type: 'checkbox',
       required: true,
       // default: ['RBanana', 'RCherry'],
-      options: ['RBanana', 'RCherry']
+      allowCustomOptions: true,
+      returnFullResults: true,
+      options: [
+        'Banana',
+        'Cherry',
+        'Grape'
+      ]
     },
     // {
     //   name: 'checkbox',

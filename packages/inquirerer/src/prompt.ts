@@ -228,6 +228,8 @@ export class Inquirerer {
   private globalMaxLines: number;
   private mutateArgs: boolean;
 
+  private handledKeys: Set<string> = new Set();
+
   constructor(
     options?: InquirererOptions
   ) {
@@ -519,6 +521,11 @@ export class Inquirerer {
       return;
     }
 
+    if (this.handledKeys.has(question.name)) {
+      return; // Already handled, skip further processing
+    }
+    this.handledKeys.add(question.name);
+
     switch (question.type) {
       case 'text':
       case 'number':
@@ -543,40 +550,40 @@ export class Inquirerer {
     obj: any,
     question: CheckboxQuestion
   ): void {
-
     const options = this.sanitizeOptions(question);
     const input = argv[question.name];
-
-    if (typeof input === 'string') {
-
-      const found = options.filter(
-        opt => opt.name === input || String(opt.value) === input
-      );
-
-      if (found.length) {
-        obj[question.name] = found.map(f=>{
-          return {
-            ...f,
-            selected: true
-          }
-        });
-      }
-    } else if (Array.isArray(input)) {
-      const found = options.filter(
-        opt => input.includes(opt.name) || input.includes(String(opt.value))
-      );
-
-      if (found.length) {
-        obj[question.name] = found.map(f=>{
-          return {
-            ...f,
-            selected: true
-          }
+  
+    // Normalize to array
+    const inputs: string[] = Array.isArray(input) ? input.map(String) : [String(input)];
+  
+    // Set of matched values
+    const inputSet = new Set(inputs);
+  
+    // Base list of processed options
+    const result: OptionValue[] = options.map(opt => ({
+      ...opt,
+      selected: inputSet.has(opt.name) || inputSet.has(String(opt.value))
+    }));
+  
+    // Add extras if allowed
+    if (question.allowCustomOptions) {
+      const knownValues = new Set(options.map(opt => String(opt.value)));
+      const unknowns = inputs.filter(val => !knownValues.has(val));
+  
+      for (const val of unknowns) {
+        result.push({
+          name: val,
+          value: val,
+          selected: true
         });
       }
     }
+  
+    // Assign final result
+    obj[question.name] = question.returnFullResults
+      ? result
+      : result.filter(opt => opt.selected);
   }
-
 
   private handleOverridesWithOptions(
     argv: any,
