@@ -220,7 +220,7 @@ export interface InquirererOptions {
 }
 export class Inquirerer {
   private rl: readline.Interface | null;
-  private keypress: TerminalKeypress;
+  private keypress: TerminalKeypress | null;
   private noTty: boolean;
   private output: Writable;
   private input: Readable;
@@ -255,6 +255,7 @@ export class Inquirerer {
       this.keypress = new TerminalKeypress(noTty, input);
     } else {
       this.rl = null;
+      this.keypress = null;
     }
   }
 
@@ -590,7 +591,7 @@ export class Inquirerer {
   }
 
   private async handleQuestionType(question: Question, ctx: PromptContext): Promise<any> {
-    this.keypress.clearHandlers();
+    this.keypress?.clearHandlers();
     switch (question.type) {
       case 'confirm':
         return this.confirm(question as ConfirmQuestion, ctx);
