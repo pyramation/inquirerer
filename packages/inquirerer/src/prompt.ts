@@ -554,16 +554,25 @@ export class Inquirerer {
       );
 
       if (found.length) {
-        obj[question.name] = found
+        obj[question.name] = found.map(f=>{
+          return {
+            ...f,
+            selected: true
+          }
+        });
       }
     } else if (Array.isArray(input)) {
-
       const found = options.filter(
         opt => input.includes(opt.name) || input.includes(String(opt.value))
       );
 
       if (found.length) {
-        obj[question.name] = found
+        obj[question.name] = found.map(f=>{
+          return {
+            ...f,
+            selected: true
+          }
+        });
       }
     }
   }
