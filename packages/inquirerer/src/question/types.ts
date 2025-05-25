@@ -25,6 +25,8 @@ export interface BaseQuestion {
     validate?: (input: any, obj: any) => Validation | boolean;
     sanitize?: (input: any, obj: any) => any;
     pattern?: string;
+    dependsOn?: string[];
+    when?: (answers: any) => boolean;
   }
   
   export interface ConfirmQuestion extends BaseQuestion {

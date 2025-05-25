@@ -22,6 +22,40 @@ export interface PromptOptions {
   mutateArgs?: boolean;
 }
 
+export function reorderQuestionsByDeps(questions: Question[]): Question[] {
+  const nameToIndex = new Map<string, number>();
+  questions.forEach((q, idx) => nameToIndex.set(q.name, idx));
+
+  const resolved = new Set<string>();
+  const result: Question[] = [];
+
+  function addQuestion(q: Question) {
+    // If this question depends on others, ensure those are added first
+    if (q.dependsOn && q.dependsOn.length > 0) {
+      for (const dep of q.dependsOn) {
+        if (!resolved.has(dep)) {
+          const depIdx = nameToIndex.get(dep);
+          if (depIdx === undefined) {
+            throw new Error(`Unknown dependency: ${dep}`);
+          }
+          addQuestion(questions[depIdx]);
+        }
+      }
+    }
+    if (!resolved.has(q.name)) {
+      resolved.add(q.name);
+      result.push(q);
+    }
+  }
+
+  for (const q of questions) {
+    addQuestion(q);
+  }
+
+  return result;
+}
+
+
 const validationMessage = (question: Question, ctx: PromptContext): string => {
   if (ctx.numTries === 0 || ctx.validation.success) {
     return ''; // No message if first attempt or validation was successful
@@ -447,13 +481,22 @@ export class Inquirerer {
       throw new Error('Missing required arguments. Please provide all required parameters.');
     }
 
-    for (let index = 0; index < questions.length; index++) {
-      const question = questions[index];
+
+
+    const ordered = reorderQuestionsByDeps(questions);
+
+    for (let index = 0; index < ordered.length; index++) {
+      const question = ordered[index];
       const ctx: PromptContext = new PromptContext();
 
       // obj is already either argv itself, or a clone, but let's check if it has the property
       if (question.name in obj) {
         this.handleOverrides(argv, obj, question);
+        ctx.nextQuestion();
+        continue;
+      }
+
+      if (question.when && !question.when(obj)) {
         ctx.nextQuestion();
         continue;
       }

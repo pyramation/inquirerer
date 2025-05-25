@@ -19,7 +19,7 @@ console.log(argv);
 
 // argv.checkbox = ['RBanana'];
 // argv.checkbox = ['Banana'];
-argv.checkbox = ['Banana', 'Cherry', 'Blos'];
+// argv.checkbox = ['Banana', 'Cherry', 'Blos'];
 
 if (argv.version) {
   displayVersion();
@@ -30,6 +30,7 @@ const prompter = new Inquirerer({
   noTty: !argv.tty
 });
 
+let after = {};
 const main = async () => {
 
   const massive = await prompter.prompt(argv,  [
@@ -59,47 +60,18 @@ const main = async () => {
         'Grape'
       ]
     },
-    // {
-    //   name: 'checkbox',
-    //   type: 'checkbox',
-    //   required: true,
-    //   default: ['RBanana', 'RCherry'],
-    //   options: [
-    //     { name: 'RApple', value: 'Fruit01' },
-    //     { name: 'RBanana', value: 'Fruit02' },
-    //     { name: 'RCherry', value: 'Fruit03' },
-    //     { name: 'RGrape', value: 'Fruit04' },
-    //     { name: 'RMango', value: 'Fruit05' }
-    //   ]
-    // },
-    // {
-    //   name: 'list',
-    //   type: 'list',
-    //   required: true,
-    //   default: ['RCherry'],
-    //   options: [
-    //     { name: 'RApple', value: 'Fruit01' },
-    //     { name: 'RBanana', value: 'Fruit02' },
-    //     { name: 'RCherry', value: 'Fruit03' },
-    //     { name: 'RGrape', value: 'Fruit04' },
-    //     { name: 'RMango', value: 'Fruit05' }
-    //   ]
-    // },
-    // {
-    //   name: 'autocomplete',
-    //   type: 'autocomplete',
-    //   required: true,
-    //   default: ['RGrape'],
-    //   options: [
-    //     { name: 'RApple', value: 'Fruit01' },
-    //     { name: 'RBanana', value: 'Fruit02' },
-    //     { name: 'RCherry', value: 'Fruit03' },
-    //     { name: 'RGrape', value: 'Fruit04' },
-    //     { name: 'RMango', value: 'Fruit05' }
-    //   ]
-    // },
+    {
+      name: 'testme',
+      type: 'text',
+      dependsOn: ['checkbox'],
+      when: (answers) => {
+        const res = answers.checkbox?.find((a: any) => a.name === 'Banana');
+        return !!(res && res.selected);
+      }
+    }
   ])
   console.log(JSON.stringify(massive, null, 2))
+  console.log(JSON.stringify(after, null, 2))
   prompter.close();
 };
 
