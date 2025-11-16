@@ -28,3 +28,6 @@ jobs:
 
       - name: Test inquirerer
         run: cd packages/inquirerer && yarn test
+
+      - name: Test create-gen-app
+        run: cd packages/create-gen-app && yarn test
