@@ -14,9 +14,7 @@
    <a href="https://www.npmjs.com/package/inquirerer"><img height="20" src="https://img.shields.io/github/package-json/v/pyramation/inquirerer?filename=packages%2Finquirerer%2Fpackage.json"></a>
 </p>
 
-This library is designed to facilitate the creation of command-line utilities by providing a robust framework for capturing user input through interactive prompts. It supports a variety of question types, making it highly flexible and suitable for a wide range of applications.
-
-_This is the new and improved version of [pyramation/inquirer](https://github.com/pyramation/inquirerer-v1). Soon this will completely replace it!_
+This library is designed to facilitate the creation of command-line utilities by providing a robust framework for capturing user input through interactive prompts. It supports a variety of question types, making it highly flexible and suitable for a wide range of applications. 
 
 ## Install
 
