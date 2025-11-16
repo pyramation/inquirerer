@@ -1,6 +1,6 @@
 {
   "name": "create-gen-app",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "author": "Dan Lynch <pyramation@gmail.com>",
   "description": "Clone and customize template repositories",
   "main": "index.js",
@@ -29,7 +29,7 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
-    "inquirerer": "^2.0.8"
+    "inquirerer": "^2.1.0"
   },
   "keywords": []
 }
