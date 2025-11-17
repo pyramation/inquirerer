@@ -18,29 +18,29 @@ export * from './types';
  * @returns Path to the generated project
  */
 export async function createGen(options: CreateGenOptions): Promise<string> {
-  const { templateUrl, outputDir, argv = {}, noTty = false } = options;
-  
+  const { templateUrl, outputDir, argv = {}, noTty = false, inquirerer } = options;
+
   console.log(`Cloning template from ${templateUrl}...`);
   const tempDir = await cloneRepo(templateUrl);
-  
+
   try {
     console.log('Extracting template variables...');
     const extractedVariables = await extractVariables(tempDir);
-    
+
     console.log(`Found ${extractedVariables.fileReplacers.length} file replacers`);
     console.log(`Found ${extractedVariables.contentReplacers.length} content replacers`);
     if (extractedVariables.projectQuestions) {
       console.log(`Found ${extractedVariables.projectQuestions.questions.length} project questions`);
     }
-    
+
     console.log('Prompting for variable values...');
-    const answers = await promptUser(extractedVariables, argv, noTty);
-    
+    const answers = await promptUser(extractedVariables, argv, noTty, inquirerer);
+
     console.log(`Generating project in ${outputDir}...`);
     await replaceVariables(tempDir, outputDir, extractedVariables, answers);
-    
+
     console.log('Project created successfully!');
-    
+
     return outputDir;
   } finally {
     if (fs.existsSync(tempDir)) {

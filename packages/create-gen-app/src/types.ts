@@ -1,4 +1,4 @@
-import { Question } from 'inquirerer';
+import { Inquirerer, Question } from 'inquirerer';
 
 /**
  * Questions configuration that can be loaded from .questions.json or .questions.js
@@ -33,21 +33,26 @@ export interface CreateGenOptions {
    * URL or path to the template repository
    */
   templateUrl: string;
-  
+
   /**
    * Destination directory for the generated project
    */
   outputDir: string;
-  
+
   /**
    * Command-line arguments to pre-populate answers
    */
   argv?: Record<string, any>;
-  
+
   /**
    * Whether to use TTY for interactive prompts
    */
   noTty?: boolean;
+
+  /**
+   * Optional Inquirerer instance to reuse (recommended to avoid stdin/stdout conflicts)
+   */
+  inquirerer?: Inquirerer;
 }
 
 /**

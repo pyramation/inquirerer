@@ -50,24 +50,28 @@ export function generateQuestions(extractedVariables: ExtractedVariables): Quest
  * @param extractedVariables - Variables extracted from the template
  * @param argv - Command-line arguments to pre-populate answers
  * @param noTty - Whether to disable TTY mode
+ * @param inquirerer - Optional Inquirerer instance to reuse (recommended to avoid stdin/stdout conflicts)
  * @returns Answers from the user
  */
 export async function promptUser(
   extractedVariables: ExtractedVariables,
   argv: Record<string, any> = {},
-  noTty: boolean = false
+  noTty: boolean = false,
+  inquirerer?: Inquirerer
 ): Promise<Record<string, any>> {
   const questions = generateQuestions(extractedVariables);
-  
+
   if (questions.length === 0) {
     return argv;
   }
-  
-  const prompter = new Inquirerer({
+
+  // Use provided inquirerer instance or create a new one
+  // Using a single shared instance is recommended to avoid terminal state conflicts
+  const prompter = inquirerer || new Inquirerer({
     noTty
   });
-  
+
   const answers = await prompter.prompt(argv, questions);
-  
+
   return answers;
 }

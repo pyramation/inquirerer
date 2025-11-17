@@ -13,6 +13,8 @@ const OUTPUT_DIR = './test-output';
 async function main() {
   console.log('🚀 create-gen-app development script\n');
 
+  let inquirerer: Inquirerer | null = null;
+
   try {
     // Clone the default repository
     console.log(`Cloning template from ${DEFAULT_REPO}...`);
@@ -31,7 +33,7 @@ async function main() {
     console.log(`\nFound ${folders.length} template(s): ${folders.join(', ')}\n`);
 
     // Use inquirerer to prompt for folder selection
-    const inquirerer = new Inquirerer();
+    inquirerer = new Inquirerer();
     const question: ListQuestion = {
       type: 'list',
       name: 'template',
@@ -41,8 +43,6 @@ async function main() {
     };
 
     const answers = await inquirerer.prompt({}, [question]) as { template: string };
-    // inquirerer.close();
-
     const selectedFolder = answers.template;
     console.log(`\nYou selected: ${selectedFolder}\n`);
 
@@ -59,7 +59,7 @@ async function main() {
     }
 
     console.log('\nPrompting for variable values...');
-    const variableAnswers = await promptUser(extractedVariables, {}, false);
+    const variableAnswers = await promptUser(extractedVariables, {}, false, inquirerer);
 
     // Ensure output directory exists
     const absoluteOutputDir = path.resolve(OUTPUT_DIR);
@@ -74,12 +74,20 @@ async function main() {
     console.log('\n✅ Project created successfully!');
     console.log(`📁 Output directory: ${absoluteOutputDir}\n`);
 
+    // Close the inquirerer instance after all prompting is done
+    if (inquirerer) {
+      inquirerer.close();
+    }
+
     // Cleanup temp directory
     if (fs.existsSync(tempDir)) {
       fs.rmSync(tempDir, { recursive: true, force: true });
     }
 
   } catch (error) {
+    if (inquirerer) {
+      inquirerer.close();
+    }
     console.error('\n❌ Error:', error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
